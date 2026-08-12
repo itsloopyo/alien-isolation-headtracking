@@ -9,6 +9,7 @@
 
 #include "build_profile.h"
 #include "camera_matrix.h"
+#include "config.h"
 #include "head_transform.h"
 #include "injection_state.h"
 #include "matrix_math.h"
@@ -275,27 +276,37 @@ struct FrameTask {
     const char* name;
     FrameTask_t original;
     bool seen;
+    // Gameplay tasks only: whether this one runs with the head-rotated camera.
+    // Exactly one does - see g_cleanTasks.
+    bool keepsRotation;
 };
 
 // Observation only: each of these logs once when it first runs, which is how we
 // know the cull set really is built after the camera publish rotated the entity
 // (and therefore that no separate bracket around these tasks is needed).
 FrameTask g_renderTasks[builds::kRenderTaskCount] = {
-    {"CALCULATE_POVS", nullptr, false},
-    {"BUILD_PRE_MAIN_RENDER_LISTS", nullptr, false},
-    {"BUILD_MAIN_RENDER_LIST", nullptr, false},
-    {"BUILD_SHADOWS_RENDER_LISTS", nullptr, false},
+    {"CALCULATE_POVS", nullptr, false, false},
+    {"BUILD_PRE_MAIN_RENDER_LISTS", nullptr, false, false},
+    {"BUILD_MAIN_RENDER_LIST", nullptr, false, false},
+    {"BUILD_SHADOWS_RENDER_LISTS", nullptr, false, false},
 };
 
+// ENTITY_MANAGER is the one gameplay task that runs with the camera still
+// rotated, because it is where geometry attached to the camera gets placed -
+// the space suit helmet above all. Reverting around it, as every other task
+// here does, leaves the helmet facing where the body looks, and a head turn then
+// puts the unlit back of the shell across half the screen. Confirmed by
+// bracketing each task in turn in a suit section: only this one moves the
+// helmet, and holding the rotation through the other seven changes nothing.
 FrameTask g_cleanTasks[builds::kCleanTaskCount] = {
-    {"CONTROLLER_UPDATE", nullptr, false},
-    {"HAVOK_PROCESS_RAYCASTS", nullptr, false},
-    {"AI_START_THINK", nullptr, false},
-    {"AI_END_THINK", nullptr, false},
-    {"ENTITY_MANAGER", nullptr, false},
-    {"ENTITY_MANAGER_TICK", nullptr, false},
-    {"PICKUP_MANAGER_TICK", nullptr, false},
-    {"MAIN_THREAD_CHARACTER_PROCESSING", nullptr, false},
+    {"CONTROLLER_UPDATE", nullptr, false, false},
+    {"HAVOK_PROCESS_RAYCASTS", nullptr, false, false},
+    {"AI_START_THINK", nullptr, false, false},
+    {"AI_END_THINK", nullptr, false, false},
+    {"ENTITY_MANAGER", nullptr, false, true},
+    {"ENTITY_MANAGER_TICK", nullptr, false, false},
+    {"PICKUP_MANAGER_TICK", nullptr, false, false},
+    {"MAIN_THREAD_CHARACTER_PROCESSING", nullptr, false, false},
 };
 
 void ReportTaskOnce(FrameTask& task, const char* what) {
@@ -316,7 +327,15 @@ int RunCleanTask(int index) {
     if (!task.original) return 0;
     ReportTaskOnce(task, "reads the clean forward");
     SetCachedForward(false);
+    // The rotation now stands for the whole frame, so without this the gameplay
+    // tasks would read a camera looking where the head is rather than where the
+    // body is. Take it off around them exactly as the cached forward above is,
+    // and put it back after - except for the one task that has to see it.
+    const bool restore =
+        config::Get().helmet_follows_head && !task.keepsRotation && g_entityRotated;
+    if (restore) RevertEntityToClean();
     const int result = task.original();
+    if (restore) RotateEntity(g_cameraEntity);
     SetCachedForward(true);
     return result;
 }
@@ -358,7 +377,13 @@ void __fastcall CameraInputsDetour(void* self, void* edx) {
     g_cameraEntity = ResolveCameraEntity(self);
     RotateEntity(g_cameraEntity);
     g_origCameraInputs(self, edx);
-    RevertEntityToClean();
+    // Reverting here is enough for the view and the cull set, which are already
+    // built. It is NOT enough for geometry attached to the camera: the entity
+    // update places that later in the frame, and off a camera put back to the
+    // body's orientation it places the space suit helmet facing the wrong way.
+    // So the rotation stands until the next publish takes it off, and
+    // RunCleanTask lifts it around the gameplay tasks instead.
+    if (!config::Get().helmet_follows_head) RevertEntityToClean();
     ReportCameraEntity(g_cameraEntity);
 }
 
@@ -454,7 +479,18 @@ void __fastcall CameraSetupDetour(void* self, void* edx, void* renderer, float* 
         float upCam[3];
         WorldUpInCameraSpace(V, upCam);
         HeadTransform head;
-        if (state.BuildHeadTransform(upCam, head)) {
+        if (!state.BuildHeadTransform(upCam, head)) {
+            // Nothing else publishes the aim in this mode, so leaving it alone
+            // would strand the reticle and the interaction prompt at whatever
+            // offset the last game-camera frame left them.
+            state.ClearAim();
+        } else {
+            float ndcX, ndcY;
+            if (head.ProjectCleanAim(proj[0], proj[5], ndcX, ndcY))
+                state.PublishAim(ndcX, ndcY);
+            else
+                state.ClearAim();
+
             float X[16], Xinv[16], Xt[16], camPos[3], camPosMoved[3];
             head.ConjugateForView(V, X, Xinv, camPos, camPosMoved);
             mat::Transpose4(X, Xt);

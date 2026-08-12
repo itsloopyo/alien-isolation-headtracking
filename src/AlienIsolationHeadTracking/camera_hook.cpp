@@ -7,6 +7,7 @@
 #include "config.h"
 #include "constant_buffer_injection.h"
 #include "engine_camera_hooks.h"
+#include "game_state.h"
 #include "head_transform.h"
 #include "hud_prompt.h"
 #include "injection_state.h"
@@ -145,11 +146,15 @@ void OnRender(rendering::DX11DrawContext& dc) {
         logging::Line("camera: player camera live, tracking started");
     }
 
-    if (!GameWindowActive()) {
+    // Nothing to track while the player is not in the world. A pause menu draws
+    // over a live 3D scene, so without this the view keeps swinging behind it;
+    // publishing no pose leaves the publish nothing to apply and its own revert
+    // hands the camera back exactly as the game built it.
+    if (!GameWindowActive() || camera::game_state::IsPaused()) {
         state.ClearPose();
         state.ClearAim();
         // Put the game's interaction prompt back where it draws it, so the HUD
-        // is not left offset behind a pause menu.
+        // is not left offset behind a menu.
         hud_prompt::Update(0.0f, 0.0f, false);
         return;
     }

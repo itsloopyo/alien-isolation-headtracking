@@ -62,6 +62,7 @@ if(AIHT_BUILD_CAMERA)
         src/AlienIsolationHeadTracking/camera_matrix.cpp
         src/AlienIsolationHeadTracking/constant_buffer_injection.cpp
         src/AlienIsolationHeadTracking/engine_camera_hooks.cpp
+        src/AlienIsolationHeadTracking/game_state.cpp
         src/AlienIsolationHeadTracking/head_transform.cpp
         src/AlienIsolationHeadTracking/hud_prompt.cpp
         src/AlienIsolationHeadTracking/injection_state.cpp

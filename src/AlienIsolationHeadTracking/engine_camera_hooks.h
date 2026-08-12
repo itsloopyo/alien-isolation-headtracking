@@ -7,9 +7,11 @@
 //  - The camera publish (Mode::GameCamera). The game camera entity is the only
 //    camera the engine's visibility work consults - everything published
 //    downstream is derived from it - so rotating it across the publish is what
-//    makes culling follow the head. It is put back the moment the publish
-//    returns, which leaves the entity clean for every gameplay task that reads
-//    it afterwards.
+//    makes culling follow the head. The rotation then stands for the rest of
+//    the frame, because the engine's entity update places camera-attached
+//    geometry - the space suit helmet - and does it long after the publish has
+//    returned. It is lifted around the gameplay tasks instead, so those still
+//    read the camera the body is aiming with.
 //  - The camera setup (Mode::CameraSetup). Rotates the view matrix handed to
 //    the engine's matrix build, which is downstream of culling. It also
 //    publishes the player camera in EVERY mode, because the render callback

@@ -33,6 +33,9 @@ void WriteDefaults(const std::string& path, const Settings& defaults) {
     writer.WriteSection("General");
     writer.WriteComment("Yaw mode: true = horizon-locked yaw (default), false = camera-local");
     writer.WriteString("WorldSpaceYaw", defaults.world_space_yaw ? "true" : "false");
+    writer.WriteComment("Keep the space suit helmet on your head instead of leaving it "
+                        "facing where the body looks");
+    writer.WriteString("HelmetFollowsHead", defaults.helmet_follows_head ? "true" : "false");
     writer.WriteBlankLine();
     writer.WriteSection("Hotkeys");
     writer.WriteComment("Page Down - toggle world/local yaw");
@@ -52,9 +55,12 @@ Settings Load() {
 
     settings.world_space_yaw =
         reader.ReadBool("General", "WorldSpaceYaw", settings.world_space_yaw);
+    settings.helmet_follows_head =
+        reader.ReadBool("General", "HelmetFollowsHead", settings.helmet_follows_head);
     settings.yaw_mode_key = reader.ReadHex("Hotkeys", "YawModeKey", settings.yaw_mode_key);
-    logging::Line("config: WorldSpaceYaw=%s YawModeKey=0x%02X",
-                  settings.world_space_yaw ? "true" : "false", settings.yaw_mode_key);
+    logging::Line("config: WorldSpaceYaw=%s HelmetFollowsHead=%s YawModeKey=0x%02X",
+                  settings.world_space_yaw ? "true" : "false",
+                  settings.helmet_follows_head ? "true" : "false", settings.yaw_mode_key);
     return settings;
 }
 

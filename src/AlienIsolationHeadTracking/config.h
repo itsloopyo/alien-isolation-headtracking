@@ -9,6 +9,13 @@ struct Settings {
     // view about the direction of gaze.
     bool world_space_yaw = true;
     int yaw_mode_key = 0x22;  // Page Down
+
+    // Keeps the space suit helmet on the player's head. The helmet is geometry
+    // attached to the camera and positioned by the engine's entity update, so it
+    // only follows the head if the camera is still rotated when that update
+    // runs. Off, the helmet stays where the body is looking: turn far enough and
+    // you are looking at the back of a shell that was never modelled.
+    bool helmet_follows_head = true;
 };
 
 // Reads the INI on first call, writing a commented default file when none is

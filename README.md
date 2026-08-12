@@ -5,10 +5,6 @@
 > has only been played through a small part of Alien: Isolation. Expect issues
 > in situations it has not been put through yet.
 >
-> Known issue: **the space suit helmet does not track the head.** The helmet
-> stays fixed to the body, so looking around inside it moves the view without
-> moving the helmet frame with you.
->
 > Please report anything you hit on the [issues page](https://github.com/itsloopyo/alien-isolation-headtracking/issues).
 
 # Alien: Isolation Head Tracking
@@ -118,6 +114,8 @@ The config file is generated on first run next to `AI.exe` at `AlienIsolationHea
 [General]
 ; Yaw mode: true = horizon-locked yaw (default), false = camera-local
 WorldSpaceYaw=true
+; Keep the space suit helmet on your head instead of leaving it facing where the body looks
+HelmetFollowsHead=true
 
 [Hotkeys]
 ; Virtual-key code for the yaw-mode toggle.
@@ -125,6 +123,8 @@ YawModeKey=0x22    ; Page Down
 ```
 
 `WorldSpaceYaw=true` (default) keeps yaw rotating around the world up-axis, so "up" stays gravity-aligned even when you look up or down. Set it to `false` for camera-local yaw, which follows the camera's current up-axis. Toggle it at runtime with `Page Down` or `Ctrl+Shift+H` without restarting.
+
+`HelmetFollowsHead=true` (default) keeps the space suit helmet on your head as you look around, instead of it staying fixed to the body and leaving you looking out through the side of it.
 
 ## Troubleshooting
 
@@ -152,7 +152,7 @@ YawModeKey=0x22    ; Page Down
 - Toggle between world-locked and camera-local yaw with `Page Down` or `Ctrl+Shift+H`. World-locked (default) is horizon-stable; camera-local follows the camera's current up-axis.
 
 **The space suit helmet does not move with my head**
-- Known issue, no workaround yet. The helmet is fixed to the body, so the view turns inside a helmet frame that stays put.
+- Set `HelmetFollowsHead=true` under `[General]` in `AlienIsolationHeadTracking.ini` (it is on by default).
 
 ## Updating
 

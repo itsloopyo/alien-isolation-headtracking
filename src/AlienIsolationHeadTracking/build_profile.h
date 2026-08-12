@@ -74,6 +74,17 @@ struct OffsetTable {
         int cached_forward_float;
     } render_camera;
 
+    // The engine's own pause state. The PAUSE_MODE_PROCESS frame task is a thunk
+    // that loads this singleton and calls its update, which keeps a mask of the
+    // reasons the game is paused (0x2000 the pause menu, 0x10000 the challenge
+    // map overlay, and more) and latches it into a second field it then acts on -
+    // that latched field is what the engine itself treats as "we are paused",
+    // and it is what makes it go quiet for menus this mod has never heard of.
+    struct GameState {
+        uintptr_t pause_manager_ptr;
+        uintptr_t paused;
+    } game_state;
+
     // The UI manager singleton and the Scaleform overlay records it holds. The
     // interaction prompt is repositioned by moving its player's GFx viewport
     // origin, which needs no VM call and no display-list access.
@@ -118,6 +129,7 @@ constexpr BuildProfile kSteamProfile_20150217 = {
         },
         {0x1D8, 0x14D, 0x14F, 0x1F0, 0x221, 0x2C, 0x3C},
         {0x1358100, 0x34},
+        {0x12F194C, 0x04},
         {0x134A78C, 0x04, 0x38, 0x3C, 0x34, 0x08, 0x58, 0x5C, 0x60, 0x64},
     },
 };

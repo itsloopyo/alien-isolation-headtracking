@@ -73,6 +73,12 @@ function Get-GameWindow {
 }
 
 function Save-Shot([string]$tag) {
+    # Tracking is suppressed while the game is not foreground, so a shot taken
+    # of an unfocused window records the un-rotated view no matter what pose is
+    # being sent. Take focus first and give the render thread a moment to
+    # produce a frame with the pose applied.
+    [void](Set-GameFocus)
+    Start-Sleep -Milliseconds 900
     $h = Get-GameWindow
     $r = New-Object Native+RECT
     if ($h -ne [IntPtr]::Zero) { [void][Native]::GetWindowRect($h, [ref]$r) }
