@@ -1,0 +1,28 @@
+[workspace]
+name = "alien-isolation-headtracking"
+version = "0.0.0"
+description = "6DOF head tracking for Alien: Isolation (CATHODE engine, DX11, x86)"
+license = "MIT"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[dependencies]
+cmake = ">=3.20"
+ninja = "*"
+
+[tasks]
+sync = "git submodule update --remote cameraunlock-core"
+configure = "cmake -S . -B build -A Win32 -DAIHT_BUILD_CAMERA=ON"
+build = { cmd = "cmake --build build --config Release", depends-on = ["configure"] }
+test = { cmd = "ctest --test-dir build -C Release --output-on-failure", depends-on = ["build"] }
+deploy = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1"
+install = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1", depends-on = ["build"] }
+# /y keeps uninstall.cmd headless - its trailing pause would throw on the
+# handle-less stdin a pixi task gets.
+uninstall = "cmd /c scripts\\uninstall.cmd /y"
+launch-test = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/launch-test.ps1"
+clean = "powershell -NoProfile -Command \"if (Test-Path build) { Remove-Item -Recurse -Force build }; if (Test-Path release) { Remove-Item -Recurse -Force release }\""
+# Manual dev action with a commit attached - deliberately depended on by nothing.
+update-deps = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/update-deps.ps1"
+package = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["test"] }
+release = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1"

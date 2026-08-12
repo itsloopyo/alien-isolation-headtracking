@@ -1,0 +1,66 @@
+# Build output
+/build/
+/out/
+bin/
+obj/
+*.asi
+*.dll
+*.exe
+*.pdb
+*.lib
+*.exp
+*.ilk
+
+# Vendored third-party binaries (overrides the patterns above)
+!vendor/**/*.dll
+!vendor/**/*.exe
+
+# Vendored game DLLs (referenced from local install at build time)
+libs/
+
+# Release artifacts
+/release/
+/dist/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+.cursor/
+.cursorrules
+*.user
+*.vcxproj.user
+*.suo
+
+# Pixi
+.pixi/
+
+# Agent tooling and machine-generated instructions (authoritative sources in /c/data)
+.claude/
+.lab/
+.agents/
+.skills/
+skills/
+CLAUDE.md
+AGENTS.md
+NEXUS_MODS.md
+
+# MCP servers
+.mcp/
+.mcp.json
+*.mcp.json
+mcp-servers/
+
+# Secrets
+.env
+.env.*
+
+# Launcher install state
+.headtracking-state.json
+
+# MinHook / CMake fetch caches handled under build/
+_deps/
+
+# OS
+.DS_Store
+Thumbs.db
