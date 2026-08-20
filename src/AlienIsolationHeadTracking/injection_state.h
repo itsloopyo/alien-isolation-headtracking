@@ -2,6 +2,7 @@
 
 #include <atomic>
 
+#include "aim_point.h"
 #include "head_transform.h"
 
 // The state the injection points and the Present-hook callback that feeds them
@@ -68,11 +69,20 @@ public:
 
     // Screen-space position of the clean aim point in the rotated view,
     // published by whichever injection point sees the live focal terms and drawn
-    // by the Present hook.
-    void PublishAim(float ndcX, float ndcY);
+    // by the Present hook. The frame carries the rest of what the depth readback
+    // needs to turn a depth value at that point into a distance.
+    void PublishAim(const AimFrame& frame);
     void ClearAim();
     bool AimValid() const;
     void GetAim(float& ndcX, float& ndcY) const;
+    AimFrame CurrentAimFrame() const;
+
+    // How far along the clean aim ray the thing being aimed at sits, in world
+    // units, or zero for "not known" - which projects the aim as a direction, as
+    // it did before there was a readback. Measured by the Present hook one frame
+    // and consumed by the injection points the next.
+    void SetAimDistance(float distance);
+    float AimDistance() const;
 
     // The player camera, taken from whichever hook states it outright. Every
     // other candidate matrix is matched against it, so a lighting buffer holding
@@ -99,8 +109,9 @@ private:
     volatile float m_offsetX = 0.0f, m_offsetY = 0.0f, m_offsetZ = 0.0f;
     volatile bool m_poseValid = false;
 
-    volatile float m_aimNdcX = 0.0f, m_aimNdcY = 0.0f;
+    AimFrame m_aimFrame;
     volatile bool m_aimValid = false;
+    volatile float m_aimDistance = 0.0f;
 
     float m_referenceView[16] = {};
     bool m_haveReferenceView = false;

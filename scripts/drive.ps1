@@ -10,6 +10,8 @@ param(
     [switch]$TabOut,
     [switch]$TestMenu,
     [switch]$ToGame,
+    [string]$Shot,
+    [string]$AimShot,
     [switch]$Kill
 )
 $ErrorActionPreference = 'Stop'
@@ -43,6 +45,9 @@ public static class Native {
         [FieldOffset(8)] public KEYBDINPUT ki;
     }
     [DllImport("user32.dll")] public static extern uint SendInput(uint n, INPUT[] i, int size);
+    [DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, IntPtr extra);
+    public static void RightDown() { mouse_event(0x0008, 0, 0, 0, IntPtr.Zero); }
+    public static void RightUp()   { mouse_event(0x0010, 0, 0, 0, IntPtr.Zero); }
 
     // The game reads scan codes, so a virtual-key-only synthetic press is
     // ignored. Send scan codes with the extended flag where the key needs it.
@@ -131,8 +136,13 @@ $scan = @{
     'ENTER' = @(0x1C, $false)
     'ESC'   = @(0x01, $false)
     'E'     = @(0x12, $false)
+    'W'     = @(0x11, $false)
+    'A'     = @(0x1E, $false)
+    'S'     = @(0x1F, $false)
+    'D'     = @(0x20, $false)
     'HOME'  = @(0x47, $true)
     'END'   = @(0x4F, $true)
+    'DELETE'= @(0x53, $true)
 }
 
 # Windows refuses SetForegroundWindow from a background process unless the
@@ -174,6 +184,22 @@ if ($TabOut) {
         Start-Sleep -Milliseconds 700
         Save-Shot ("tab$n-after")
     }
+    exit 0
+}
+
+if ($Shot) {
+    Save-Shot $Shot
+    exit 0
+}
+
+# A holstered weapon is not drawn at all, so anything about where the weapon
+# sits has to be judged with the aim button held down.
+if ($AimShot) {
+    [void](Set-GameFocus)
+    [Native]::RightDown()
+    Start-Sleep -Milliseconds 1200
+    Save-Shot $AimShot
+    [Native]::RightUp()
     exit 0
 }
 
@@ -247,15 +273,18 @@ if ($ToGame) {
     Send-Key 'SPACE'; Start-Sleep -Seconds 5
     Save-Shot 'b3-loading'
 
-    # The mod logs this line the first frame a player camera exists.
+    # The mod logs this line the first frame a player camera exists. The overlay
+    # listing it used to watch for is capped for the session and gets spent on
+    # the menus, so it read as "never got in game" from a save that had loaded.
+    $marker = 'player camera live'
     $deadline = (Get-Date).AddSeconds($LoadSeconds)
     while ((Get-Date) -lt $deadline) {
-        if ((Test-Path $log) -and (Select-String -Path $log -SimpleMatch 'pickupOverlay' -Quiet)) { break }
+        if ((Test-Path $log) -and (Select-String -Path $log -SimpleMatch $marker -Quiet)) { break }
         Start-Sleep -Seconds 3
     }
     Start-Sleep -Seconds 5
     Save-Shot 'd-ingame'
-    if ((Test-Path $log) -and (Select-String -Path $log -SimpleMatch 'pickupOverlay' -Quiet)) {
+    if ((Test-Path $log) -and (Select-String -Path $log -SimpleMatch $marker -Quiet)) {
         Write-Host 'IN GAME'
     } else {
         # Back out of whatever menu we are stuck on. ESC only - never a confirm.

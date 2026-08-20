@@ -1,5 +1,6 @@
 #include <iostream>
 
+int RunAimPointTests();
 int RunCameraMatrixTests();
 int RunHeadTransformTests();
 int RunMappedBufferTableTests();
@@ -12,6 +13,7 @@ int main() {
     int failures = 0;
     failures += RunMatrixMathTests();
     failures += RunCameraMatrixTests();
+    failures += RunAimPointTests();
     failures += RunHeadTransformTests();
     failures += RunMappedBufferTableTests();
 

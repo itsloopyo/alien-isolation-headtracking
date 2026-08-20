@@ -7,6 +7,7 @@
 
 #include <MinHook.h>
 
+#include "aim_point.h"
 #include "build_profile.h"
 #include "camera_matrix.h"
 #include "config.h"
@@ -301,13 +302,13 @@ FrameTask g_renderTasks[builds::kRenderTaskCount] = {
     {"BUILD_SHADOWS_RENDER_LISTS", nullptr, false, false},
 };
 
-// ENTITY_MANAGER is the one gameplay task that runs with the camera still
-// rotated, because it is where geometry attached to the camera gets placed -
-// the space suit helmet above all. Reverting around it, as every other task
-// here does, leaves the helmet facing where the body looks, and a head turn then
-// puts the unlit back of the shell across half the screen. Confirmed by
-// bracketing each task in turn in a suit section: only this one moves the
-// helmet, and holding the rotation through the other seven changes nothing.
+// ENTITY_MANAGER is the one task the head rotation is put back on for, because
+// it is where geometry attached to the camera gets placed - the space suit
+// helmet above all. Run off the body's camera like everything else, the helmet
+// faces where the body looks, and a head turn puts the unlit back of the shell
+// across half the screen. Confirmed by bracketing each task in turn in a suit
+// section: only this one moves the helmet, and rotating for the other seven
+// changes nothing.
 FrameTask g_cleanTasks[builds::kCleanTaskCount] = {
     {"CONTROLLER_UPDATE", nullptr, false, false},
     {"HAVOK_PROCESS_RAYCASTS", nullptr, false, false},
@@ -335,17 +336,19 @@ int RunRenderTask(int index) {
 int RunCleanTask(int index) {
     FrameTask& task = g_cleanTasks[index];
     if (!task.original) return 0;
-    ReportTaskOnce(task, "reads the clean forward");
-    SetCachedForward(false);
-    // The rotation now stands for the whole frame, so without this the gameplay
-    // tasks would read a camera looking where the head is rather than where the
-    // body is. Take it off around them exactly as the cached forward above is,
-    // and put it back after - except for the one task that has to see it.
-    const bool restore =
-        config::Get().helmet_follows_head && !task.keepsRotation && g_entityRotated;
-    if (restore) RevertEntityToClean();
+    ReportTaskOnce(task, task.keepsRotation ? "runs with the rotated camera"
+                                            : "reads the clean forward");
+    // The entity is clean for the whole frame outside this, so this is the ONE
+    // place that puts the rotation back on, around the ONE task that has to see
+    // it. Which way round that is stated matters: the rotation used to stand
+    // for the rest of the frame and be lifted around each gameplay task, which
+    // left it applied through every stretch of the frame that is not one of
+    // these eight - and something in there places the first-person weapon.
+    const bool rotate = config::Get().helmet_follows_head && task.keepsRotation;
+    SetCachedForward(rotate);
+    if (rotate) RotateEntity(g_cameraEntity);
     const int result = task.original();
-    if (restore) RotateEntity(g_cameraEntity);
+    if (rotate) RevertEntityToClean();
     SetCachedForward(true);
     return result;
 }
@@ -387,13 +390,23 @@ void __fastcall CameraInputsDetour(void* self, void* edx) {
     g_cameraEntity = ResolveCameraEntity(self);
     RotateEntity(g_cameraEntity);
     g_origCameraInputs(self, edx);
-    // Reverting here is enough for the view and the cull set, which are already
-    // built. It is NOT enough for geometry attached to the camera: the entity
-    // update places that later in the frame, and off a camera put back to the
-    // body's orientation it places the space suit helmet facing the wrong way.
-    // So the rotation stands until the next publish takes it off, and
-    // RunCleanTask lifts it around the gameplay tasks instead.
-    if (!config::Get().helmet_follows_head) RevertEntityToClean();
+    // The rotation has done its work here: the view and the cull set are built
+    // from it by the time the publish returns. Take it straight back off.
+    //
+    // It used to stand until the next publish, so that the entity update could
+    // place the space suit helmet off a head-turned camera. That left it applied
+    // through every stretch of the frame that is not one of the hooked gameplay
+    // tasks, and something in there places the first-person weapon: the weapon
+    // then followed head PITCH instead of the body. Measured - at 20 degrees of
+    // head pitch the world moved 435 pixels and the weapon 40. Yaw and roll
+    // looked right, which is what made it survive so long: the weapon takes its
+    // yaw from the body and only its pitch from the camera, so the one axis that
+    // leaked is the one axis a screenshot makes hardest to read.
+    //
+    // The helmet keeps working because RunCleanTask puts the rotation back on
+    // around ENTITY_MANAGER alone, which is the only task that ever needed it
+    // (Session 9 bisected exactly that).
+    RevertEntityToClean();
     ReportCameraEntity(g_cameraEntity);
 }
 
@@ -424,11 +437,51 @@ void __fastcall CameraDeriveDetour(float* obj, void* edx) {
     }
 }
 
+// Said once: the near plane is the whole scale of the depth readback, so a
+// projection this could not read shows up in the log rather than as a reticle
+// that quietly stops correcting for a lean.
+void ReportNearPlane(bool known, float nearZ) {
+    static bool logged = false;
+    if (logged) return;
+    logged = true;
+    if (known)
+        logging::Line("camera: projection near plane is %.4f; the reticle can be corrected for a "
+                      "lean", nearZ);
+    else
+        logging::Line("camera: the projection is not the infinite-far shape this reads a near "
+                      "plane from; the reticle will drift when you lean");
+}
+
 // The last view the camera setup hook handed back, so a re-submission of it can
 // be recognised. See RecognisePlayerCamera.
 float g_lastRotatedView[16];
 bool g_haveLastRotatedView = false;
 bool g_sourceLogged = false;
+
+// Publishes where the clean aim lands in the frame about to be drawn, together
+// with everything the depth readback needs to turn a depth value at that point
+// into a distance. The distance it projects with is the one that readback
+// measured a frame or two ago - the loop that keeps the reticle on its target
+// through a lean.
+void PublishAimFor(InjectionState& state, const HeadTransform& head, const float* proj) {
+    AimFrame frame;
+    frame.fx = proj[0];
+    frame.fy = proj[5];
+    if (!head.ProjectCleanAim(frame.fx, frame.fy, state.AimDistance(), frame.ndcX, frame.ndcY)) {
+        state.ClearAim();
+        return;
+    }
+    for (int i = 0; i < 3; ++i) {
+        frame.eye[i] = head.CleanEyeInView()[i];
+        frame.dir[i] = head.CleanAimInView()[i];
+    }
+    // Without a near plane a depth value cannot be turned into a distance at
+    // all, so the frame is published un-measurable rather than measured wrong,
+    // and the reticle falls back to projecting the aim as a direction.
+    frame.valid = NearPlaneFromProjection(proj, frame.nearZ);
+    ReportNearPlane(frame.valid, frame.nearZ);
+    state.PublishAim(frame);
+}
 
 // Whether these arguments are the player's own camera, and if so publishing it.
 // Rejects square projections (shadow maps and cubemap faces), non-rigid views,
@@ -456,13 +509,8 @@ bool RecognisePlayerCamera(const float* view, const float* proj, float* V) {
     // what is rendered - so the marker has to move to where it actually points.
     // The rotation is the one the camera publish just applied to the entity, and
     // the projection's focal terms sit on its diagonal in either storage order.
-    if (state.CurrentMode() == Mode::GameCamera && state.PoseValid()) {
-        float ndcX, ndcY;
-        if (g_entityHead.ProjectCleanAim(fx, fy, ndcX, ndcY))
-            state.PublishAim(ndcX, ndcY);
-        else
-            state.ClearAim();
-    }
+    if (state.CurrentMode() == Mode::GameCamera && state.PoseValid())
+        PublishAimFor(state, g_entityHead, proj);
     return true;
 }
 
@@ -495,11 +543,7 @@ void __fastcall CameraSetupDetour(void* self, void* edx, void* renderer, float* 
             // offset the last game-camera frame left them.
             state.ClearAim();
         } else {
-            float ndcX, ndcY;
-            if (head.ProjectCleanAim(proj[0], proj[5], ndcX, ndcY))
-                state.PublishAim(ndcX, ndcY);
-            else
-                state.ClearAim();
+            PublishAimFor(state, head, proj);
 
             float X[16], Xinv[16], Xt[16], camPos[3], camPosMoved[3];
             head.ConjugateForView(V, X, Xinv, camPos, camPosMoved);

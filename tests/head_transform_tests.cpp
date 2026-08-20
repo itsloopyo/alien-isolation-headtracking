@@ -119,24 +119,24 @@ void TestCleanAimProjectionFollowsTheRotation() {
     float ndcX = 99.0f, ndcY = 99.0f;
 
     Check(transform.Build(MakePose(0.0f, 0.0f, 15.0f), kCameraUp), "a roll-only pose builds");
-    Check(transform.ProjectCleanAim(kFx, kFy, ndcX, ndcY), "a roll-only pose projects");
+    Check(transform.ProjectCleanAim(kFx, kFy, 0.0f, ndcX, ndcY), "a roll-only pose projects");
     CheckNear(ndcX, 0.0f, 1e-5f, "pure roll leaves the aim point at screen centre (x)");
     CheckNear(ndcY, 0.0f, 1e-5f, "pure roll leaves the aim point at screen centre (y)");
 
     Check(transform.Build(MakePose(0.0f, 12.0f, 0.0f), kCameraUp), "a pitch-only pose builds");
-    Check(transform.ProjectCleanAim(kFx, kFy, ndcX, ndcY), "a pitch-only pose projects");
+    Check(transform.ProjectCleanAim(kFx, kFy, 0.0f, ndcX, ndcY), "a pitch-only pose projects");
     CheckNear(ndcX, 0.0f, 1e-5f, "pure pitch moves the aim point vertically only");
     Check(ndcY > 0.0f, "pitching up moves the aim point up the screen");
 
     Check(transform.Build(MakePose(20.0f, 0.0f, 0.0f), kCameraUp), "a yaw-only pose builds");
-    Check(transform.ProjectCleanAim(kFx, kFy, ndcX, ndcY), "a yaw-only pose projects");
+    Check(transform.ProjectCleanAim(kFx, kFy, 0.0f, ndcX, ndcY), "a yaw-only pose projects");
     CheckNear(ndcY, 0.0f, 1e-5f, "pure yaw moves the aim point horizontally only");
     Check(ndcX < 0.0f, "yawing left moves the aim point the other way");
 
     // The invariant that keeps the reticle glued to the shot: the projection is
     // the perspective divide of the rotation's own third row.
     Check(transform.Build(MakePose(18.0f, -9.0f, 6.0f), kCameraUp), "a combined pose builds");
-    Check(transform.ProjectCleanAim(kFx, kFy, ndcX, ndcY), "a combined pose projects");
+    Check(transform.ProjectCleanAim(kFx, kFy, 0.0f, ndcX, ndcY), "a combined pose projects");
     const float* R = transform.Rotation();
     CheckNear(ndcX, kFx * R[8] / R[10], 1e-6f, "the projection is fx * R[8] / R[10]");
     CheckNear(ndcY, kFy * R[9] / R[10], 1e-6f, "the projection is fy * R[9] / R[10]");
@@ -148,9 +148,40 @@ void TestAimBehindTheViewIsRejected() {
     HeadTransform transform;
     float ndcX = 0.0f, ndcY = 0.0f;
     Check(transform.Build(MakePose(120.0f, 0.0f, 0.0f), kCameraUp), "an extreme pose builds");
-    Check(!transform.ProjectCleanAim(kFx, kFy, ndcX, ndcY),
+    Check(!transform.ProjectCleanAim(kFx, kFy, 0.0f, ndcX, ndcY),
           "an aim point behind the rotated view is rejected");
-    Check(!transform.ProjectCleanAim(0.0f, kFy, ndcX, ndcY), "a degenerate focal term is rejected");
+    Check(!transform.ProjectCleanAim(0.0f, kFy, 0.0f, ndcX, ndcY), "a degenerate focal term is rejected");
+}
+
+// The lean litmus test, and the whole reason the projection takes a distance.
+//
+// Lean to the right with the head otherwise still: nothing about the picture
+// turns, so a direction-only projection leaves the aim point dead centre while
+// everything in the world slides left underneath it. The aim POINT has to slide
+// with the world, and by more the closer it is.
+void TestALeanMovesTheAimPointByTheParallax() {
+    HeadPose lean;
+    lean.offset[0] = 0.30f;  // the position limit, to the right
+
+    HeadTransform transform;
+    Check(transform.Build(lean, kCameraUp), "a lean-only pose builds");
+
+    float ndcX = 99.0f, ndcY = 99.0f;
+    Check(transform.ProjectCleanAim(kFx, kFy, 0.0f, ndcX, ndcY), "a lean projects at infinity");
+    CheckNear(ndcX, 0.0f, 1e-6f, "a target at infinity does not move when you lean");
+    CheckNear(ndcY, 0.0f, 1e-6f, "a target at infinity does not move vertically either");
+
+    // Leaning right moves the eye right, so the target the gun still points at
+    // is now to the LEFT of where the picture is centred.
+    float nearNdcX = 0.0f, farNdcX = 0.0f;
+    Check(transform.ProjectCleanAim(kFx, kFy, 2.0f, nearNdcX, ndcY), "a lean projects at 2m");
+    Check(nearNdcX < 0.0f, "leaning right moves the aim point left of centre");
+    CheckNear(nearNdcX, -kFx * 0.30f / 2.0f, 1e-6f, "the offset is the parallax angle's tangent");
+    CheckNear(ndcY, 0.0f, 1e-6f, "a sideways lean does not move the aim point vertically");
+
+    Check(transform.ProjectCleanAim(kFx, kFy, 8.0f, farNdcX, ndcY), "a lean projects at 8m");
+    Check(farNdcX > nearNdcX, "the further the target, the less it moves");
+    CheckNear(farNdcX, nearNdcX * 0.25f, 1e-6f, "and it moves in inverse proportion to range");
 }
 
 // A rotation-only pose must leave the camera exactly where the game put it.
@@ -243,6 +274,7 @@ int RunHeadTransformTests() {
     TestRotationStaysOrthonormal();
     TestCleanAimProjectionFollowsTheRotation();
     TestAimBehindTheViewIsRejected();
+    TestALeanMovesTheAimPointByTheParallax();
     TestRotationOnlyLeavesTheCameraPositionAlone();
     TestConjugationProducesInverses();
     TestPostMultiplyingByXTurnsTheCameraByTheHeadRotation();

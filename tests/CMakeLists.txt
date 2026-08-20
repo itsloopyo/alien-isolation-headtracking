@@ -3,10 +3,12 @@
 # and stays out of these files by design.
 add_executable(aiht_tests
     test_main.cpp
+    aim_point_tests.cpp
     camera_matrix_tests.cpp
     head_transform_tests.cpp
     mapped_buffer_table_tests.cpp
     matrix_math_tests.cpp
+    ${CMAKE_SOURCE_DIR}/src/AlienIsolationHeadTracking/aim_point.cpp
     ${CMAKE_SOURCE_DIR}/src/AlienIsolationHeadTracking/camera_matrix.cpp
     ${CMAKE_SOURCE_DIR}/src/AlienIsolationHeadTracking/head_transform.cpp
 )

@@ -58,9 +58,12 @@ set(AIHT_SOURCES
 )
 if(AIHT_BUILD_CAMERA)
     list(APPEND AIHT_SOURCES
+        src/AlienIsolationHeadTracking/aim_point.cpp
         src/AlienIsolationHeadTracking/camera_hook.cpp
         src/AlienIsolationHeadTracking/camera_matrix.cpp
         src/AlienIsolationHeadTracking/constant_buffer_injection.cpp
+        src/AlienIsolationHeadTracking/d3d11_context_vtable.cpp
+        src/AlienIsolationHeadTracking/depth_probe.cpp
         src/AlienIsolationHeadTracking/engine_camera_hooks.cpp
         src/AlienIsolationHeadTracking/game_state.cpp
         src/AlienIsolationHeadTracking/head_transform.cpp

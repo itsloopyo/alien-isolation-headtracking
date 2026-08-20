@@ -9,9 +9,10 @@
 #include "cameraunlock/logging/file_log.h"
 
 // ===========================================================================
-// The game's interaction prompt - the "E USE" glyph and the cursor dot that
-// fades in with an interactable - is authored at the centre of the PickupOverlay
-// Scaleform movie. With aim decoupled from view it belongs at the aim point.
+// The HUD the game authors at the centre of the screen - the "E USE" glyph and
+// its cursor dot, and the weapon reticles, including the flamethrower's corner
+// brackets - marks where the shot goes. With aim decoupled from view that is no
+// longer the centre of the picture, so it belongs at the aim point.
 //
 // PickupOverlay is ActionScript 3 and exposes no method that repositions either
 // clip, and this build has no path-based SetVariable, so nothing inside the
@@ -27,19 +28,51 @@
 namespace {
 using namespace cameraunlock;
 
-// The overlay that owns the interaction prompt, confirmed at runtime by
-// watching which overlay receives Set_Interaction_Prompt_Visible.
-const char kPromptOverlay[] = "pickupOverlay";
+// The overlays whose contents are authored around the crosshair. `pickupOverlay`
+// owns the interaction prompt, confirmed at runtime by watching which overlay
+// receives Set_Interaction_Prompt_Visible; `weaponstuff` owns the weapon
+// reticles - the flamethrower's bracket of corners is drawn there, which is why
+// it stayed glued to the centre while everything else followed the aim.
+//
+// Their Scaleform players are separate objects, so each carries its own viewport
+// and needs its own baseline. `pickupOverlay` shares a player with
+// `popup_message`, so those two move together; that has always been the case.
+const char* const kCentredOverlays[] = {"pickupOverlay", "weaponstuff"};
+constexpr int kCentredOverlayCount =
+    static_cast<int>(sizeof(kCentredOverlays) / sizeof(kCentredOverlays[0]));
+
+bool IsCentredOverlay(const char* name) {
+    for (int i = 0; i < kCentredOverlayCount; ++i)
+        if (strcmp(name, kCentredOverlays[i]) == 0) return true;
+    return false;
+}
 
 // A manager holding more records than this is not the one we are looking for,
 // so the walk stops rather than following whatever the pointer really is.
 constexpr unsigned kMaxOverlays = 256;
 
-// Where the engine put the viewport before we touched it. Keyed by player so a
-// reload picks up a fresh baseline rather than compounding an old offset.
-const void* g_basePlayer = nullptr;
-int g_baseLeft = 0;
-int g_baseTop = 0;
+// Where the engine put each viewport before we touched it. Keyed by player so a
+// reload picks up a fresh baseline rather than compounding an old offset, and
+// one slot per overlay we move because they have separate players.
+struct Baseline {
+    const void* player = nullptr;
+    int left = 0;
+    int top = 0;
+};
+Baseline g_baselines[kCentredOverlayCount];
+
+// The baseline slot for this player, seeded from the engine's own values the
+// first time the player is seen. A player that has changed underneath us is a
+// reload, and its slot is re-seeded rather than reused.
+Baseline& BaselineFor(void* player, int slot, int left, int top) {
+    Baseline& base = g_baselines[slot];
+    if (base.player != player) {
+        base.player = player;
+        base.left = left;
+        base.top = top;
+    }
+    return base;
+}
 
 int g_lastOverlayCount = -1;
 
@@ -72,9 +105,9 @@ bool BuildIsKnown() {
 
 namespace hud_prompt {
 
-// ndc is the clean aim direction projected into the head-tracked view, the same
-// point our own reticle is drawn at, so the prompt and the reticle stay
-// together. Overlay records are only read while the manager's own lock is held
+// ndc is the clean aim point projected into the head-tracked view, the same
+// point our own reticle is drawn at, so the prompt, the weapon reticle and the
+// dot stay together. Overlay records are only read while the manager's own lock is held
 // and the pointer is still in its list - caching them across frames crashes on
 // level load, when overlays churn.
 void Update(float ndcX, float ndcY, bool valid) {
@@ -109,26 +142,25 @@ void Update(float ndcX, float ndcY, bool valid) {
                 if (!o) continue;
                 const char* n = static_cast<const char*>(ReadPtr(o, ui.overlay_name));
                 if (announce) logging::Line("hud: overlay '%s'", n ? n : "(null)");
-                if (!n || strcmp(n, kPromptOverlay) != 0) continue;
+                if (!n || !IsCentredOverlay(n)) continue;
+                int slot = 0;
+                while (strcmp(n, kCentredOverlays[slot]) != 0) ++slot;
 
                 void* player = ReadPtr(o, ui.overlay_player);
                 if (!player) continue;
-                if (player != g_basePlayer) {
-                    g_basePlayer = player;
-                    g_baseLeft = Field(player, ui.viewport_left);
-                    g_baseTop = Field(player, ui.viewport_top);
-                }
+                const Baseline& base = BaselineFor(player, slot, Field(player, ui.viewport_left),
+                                                   Field(player, ui.viewport_top));
 
                 if (!valid) {
-                    Field(player, ui.viewport_left) = g_baseLeft;
-                    Field(player, ui.viewport_top) = g_baseTop;
+                    Field(player, ui.viewport_left) = base.left;
+                    Field(player, ui.viewport_top) = base.top;
                     continue;
                 }
                 const float halfW = Field(player, ui.viewport_width) * 0.5f;
                 const float halfH = Field(player, ui.viewport_height) * 0.5f;
                 // NDC y points up, screen y points down.
-                Field(player, ui.viewport_left) = g_baseLeft + static_cast<int>(ndcX * halfW);
-                Field(player, ui.viewport_top) = g_baseTop - static_cast<int>(ndcY * halfH);
+                Field(player, ui.viewport_left) = base.left + static_cast<int>(ndcX * halfW);
+                Field(player, ui.viewport_top) = base.top - static_cast<int>(ndcY * halfH);
             }
             g_lastOverlayCount = static_cast<int>(total);
         }

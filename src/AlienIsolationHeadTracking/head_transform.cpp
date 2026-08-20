@@ -75,6 +75,18 @@ bool HeadTransform::Build(const HeadPose& pose, const float* yawAxisCam) {
     m_offset[0] = ox;
     m_offset[1] = oy;
     m_offset[2] = oz;
+
+    // The clean view's origin carried into the injected view: S applied to
+    // (0,0,0), which is just S's translation column.
+    m_cleanEye[0] = m_s[3];
+    m_cleanEye[1] = m_s[7];
+    m_cleanEye[2] = m_s[11];
+    // And its forward (0,0,1) carried the same way: column 2 of A, and A is the
+    // transpose of the camera rotation, so that is R's row 2.
+    m_cleanAim[0] = m_rotation[8];
+    m_cleanAim[1] = m_rotation[9];
+    m_cleanAim[2] = m_rotation[10];
+
     m_hasOffset = fabsf(ox) > 1e-5f || fabsf(oy) > 1e-5f || fabsf(oz) > 1e-5f;
     return true;
 }
@@ -96,14 +108,21 @@ void HeadTransform::ConjugateForView(const float* V, float* X, float* Xinv, floa
     }
 }
 
-bool HeadTransform::ProjectCleanAim(float fx, float fy, float& ndcX, float& ndcY) const {
+bool HeadTransform::ProjectCleanAim(float fx, float fy, float aimDistance, float& ndcX,
+                                    float& ndcY) const {
     if (fx < 1e-3f || fy < 1e-3f) return false;
-    // Old view-space forward (0,0,1) expressed in the rotated view = column 2 of
-    // A, and A is the transpose of the camera rotation, so that is its row 2.
-    const float dx = m_rotation[8], dy = m_rotation[9], dz = m_rotation[10];
-    if (dz <= 1e-3f) return false;
-    ndcX = fx * dx / dz;
-    ndcY = fy * dy / dz;
+
+    // With no distance the aim point is at infinity, where the eye it is seen
+    // from does not matter and the direction alone projects it.
+    float px = m_cleanAim[0], py = m_cleanAim[1], pz = m_cleanAim[2];
+    if (aimDistance > 0.0f) {
+        px = m_cleanEye[0] + px * aimDistance;
+        py = m_cleanEye[1] + py * aimDistance;
+        pz = m_cleanEye[2] + pz * aimDistance;
+    }
+    if (pz <= 1e-3f) return false;
+    ndcX = fx * px / pz;
+    ndcY = fy * py / pz;
     return true;
 }
 

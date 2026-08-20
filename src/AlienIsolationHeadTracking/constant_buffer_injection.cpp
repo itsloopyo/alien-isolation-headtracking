@@ -8,7 +8,9 @@
 
 #include <MinHook.h>
 
+#include "aim_point.h"
 #include "camera_matrix.h"
+#include "d3d11_context_vtable.h"
 #include "head_transform.h"
 #include "injection_state.h"
 #include "mapped_buffer_table.h"
@@ -322,12 +324,19 @@ void InjectIntoCB(float* cb, UINT size) {
     // orthonormal, so the xyz-magnitude of VP row 0 is fx and of row 1 is fy.
     if (aimOff >= 0) {
         const float* vp = cb + aimOff;
-        float ndcX, ndcY;
-        if (head.ProjectCleanAim(mat::Mag3(vp[0], vp[1], vp[2]), mat::Mag3(vp[4], vp[5], vp[6]),
-                                 ndcX, ndcY))
-            state.PublishAim(ndcX, ndcY);
-        else
+        AimFrame frame;
+        frame.fx = mat::Mag3(vp[0], vp[1], vp[2]);
+        frame.fy = mat::Mag3(vp[4], vp[5], vp[6]);
+        if (head.ProjectCleanAim(frame.fx, frame.fy, state.AimDistance(), frame.ndcX, frame.ndcY)) {
+            for (int i = 0; i < 3; ++i) {
+                frame.eye[i] = head.CleanEyeInView()[i];
+                frame.dir[i] = head.CleanAimInView()[i];
+            }
+            frame.valid = NearPlaneFromViewProjection(vp, frame.nearZ);
+            state.PublishAim(frame);
+        } else {
             state.ClearAim();
+        }
     }
 
     float V[16];
@@ -376,43 +385,6 @@ void __stdcall UnmapDetour(ID3D11DeviceContext* ctx, ID3D11Resource* res, UINT s
         LeaveCriticalSection(&g_cs);
     }
     g_origUnmap(ctx, res, sub);
-}
-
-// The device context's vtable, from a throwaway device of our own: the game's
-// context is not reachable from here, and every D3D11 context shares the layout.
-bool GetContextVTable(void**& vtable) {
-    WNDCLASSEXA wc = {};
-    wc.cbSize = sizeof(wc);
-    wc.lpfnWndProc = DefWindowProcA;
-    wc.hInstance = GetModuleHandleA(nullptr);
-    wc.lpszClassName = "_AIHT_CtxProbe";
-    RegisterClassExA(&wc);
-    HWND hwnd = CreateWindowA(wc.lpszClassName, "_p", WS_POPUP, 0, 0, 16, 16, nullptr, nullptr,
-                              wc.hInstance, nullptr);
-    DXGI_SWAP_CHAIN_DESC scd = {};
-    scd.BufferDesc.Width = 16;
-    scd.BufferDesc.Height = 16;
-    scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    scd.BufferDesc.RefreshRate = {60, 1};
-    scd.SampleDesc = {1, 0};
-    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    scd.BufferCount = 1;
-    scd.OutputWindow = hwnd;
-    scd.Windowed = TRUE;
-    scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    D3D_FEATURE_LEVEL lvl = D3D_FEATURE_LEVEL_11_0;
-    IDXGISwapChain* swap = nullptr;
-    ID3D11Device* dev = nullptr;
-    ID3D11DeviceContext* ctx = nullptr;
-    HRESULT hr = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, &lvl, 1,
-                                               D3D11_SDK_VERSION, &scd, &swap, &dev, nullptr, &ctx);
-    if (FAILED(hr)) { DestroyWindow(hwnd); return false; }
-    vtable = *reinterpret_cast<void***>(ctx);
-    swap->Release();
-    ctx->Release();
-    dev->Release();
-    DestroyWindow(hwnd);
-    return true;
 }
 
 constexpr int kMapVTableSlot = 14;

@@ -86,11 +86,26 @@ public:
     void ConjugateForView(const float* V, float* X, float* Xinv, float* camPos,
                           float* camPosMoved) const;
 
-    // Where the clean aim ray (view-space forward before injection) lands on
-    // screen after the rotation, in normalised device coordinates. fx and fy are
-    // the projection's focal terms. False when the aim point is behind the
-    // rotated view or the focal terms are degenerate.
-    bool ProjectCleanAim(float fx, float fy, float& ndcX, float& ndcY) const;
+    // Where the clean aim lands on screen after the injection, in normalised
+    // device coordinates. fx and fy are the projection's focal terms.
+    //
+    // `aimDistance` is how far along the clean aim ray the thing being aimed at
+    // sits, in world units, and is what makes a LEAN come out right: the frame
+    // is drawn from an eye the lean has moved, so a point at finite range no
+    // longer projects where its direction does. Zero means "no distance known",
+    // which is the honest answer for a shot into the sky and is what the rest of
+    // the pipeline passes until the depth readback lands.
+    //
+    // False when the aim point is behind the injected view or the focal terms
+    // are degenerate.
+    bool ProjectCleanAim(float fx, float fy, float aimDistance, float& ndcX, float& ndcY) const;
+
+    // The clean aim ray, in the coordinates of the view the frame is RENDERED
+    // with - the eye the shot leaves from, and the direction it leaves along.
+    // Together with a distance they give the aim POINT, which is what the
+    // reticle actually has to sit on.
+    const float* CleanEyeInView() const { return m_cleanEye; }
+    const float* CleanAimInView() const { return m_cleanAim; }
 
 private:
     float m_rotation[16] = {};
@@ -103,6 +118,11 @@ private:
     float m_s[16] = {};
     float m_sInverse[16] = {};
     float m_offset[3] = {};
+    // The clean view's origin and forward, carried into the injected view by S.
+    // Both fall straight out of S and R, and are kept so no caller has to
+    // re-derive the composition and risk disagreeing with it.
+    float m_cleanEye[3] = {};
+    float m_cleanAim[3] = {0.0f, 0.0f, 1.0f};
     bool m_hasOffset = false;
 };
 

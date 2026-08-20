@@ -2,10 +2,14 @@
 
 #include <windows.h>
 
+#include <cmath>
+
 #include <MinHook.h>
 
+#include "aim_point.h"
 #include "config.h"
 #include "constant_buffer_injection.h"
+#include "depth_probe.h"
 #include "engine_camera_hooks.h"
 #include "game_state.h"
 #include "head_transform.h"
@@ -62,6 +66,20 @@ constexpr unsigned kReticleColour = 0xC0B0B0B0u;
 
 // How often the diagnostics report, in presented frames.
 constexpr int kPoseLogInterval = 600;
+
+// Time constant of the aim-distance smoothing. The distance JUMPS whenever the
+// aim crosses the edge of anything - a doorway, a railing, a console - and an
+// unsmoothed jump moves the reticle across the screen in one frame for no reason
+// the player can see. Long enough to ride over that, short enough to have
+// arrived by the time a head movement has finished.
+constexpr float kAimDistanceSmoothingMs = 120.0f;
+
+// The first-person weapon is drawn into the same depth buffer, so the reticle
+// sitting over a barrel or a raised flamethrower reads a few tens of
+// centimetres and swings the correction wildly. Nothing the player aims AT is
+// this close, so a measurement that says otherwise is the gun, and the target
+// behind it is at least this far.
+constexpr float kMinAimDistance = 0.75f;
 
 // Alt-tabbing pauses the game, and DXGI throttles Present for an inactive
 // window - so the render callback, which is the only thing that advances the
@@ -124,9 +142,64 @@ bool UpdatePose(float dt) {
     return fresh;
 }
 
+// The measured distance, smoothed, and the loop that feeds it back into the
+// next frame's projection. Zero means the readback found sky or has not landed
+// yet, which projects the aim as a direction - right for a shot at infinity, and
+// what the mod did everywhere before there was a readback.
+float g_aimDistance = 0.0f;
+
+// What the last readback actually held, and how many have landed. The distance
+// is derived from these, so when it reads zero this says whether nothing came
+// back at all or something came back that was not scene depth.
+float g_lastDepth = -1.0f;
+int g_depthReads = 0;
+
+void ClearAimDistance(camera::InjectionState& state) {
+    g_aimDistance = 0.0f;
+    state.SetAimDistance(0.0f);
+}
+
+void ReportFirstDistance(float distance) {
+    static bool logged = false;
+    if (logged) return;
+    logged = true;
+    // One line, once. The whole lean correction rides on this number, and a
+    // depth buffer that is not the scene's shows up here as a distance that is
+    // not a distance, rather than as a subtly wrong reticle.
+    logging::Line("camera: first measured aim distance %.2f m", distance);
+}
+
+void UpdateAimDistance(rendering::DX11DrawContext& dc, camera::InjectionState& state, bool aimValid,
+                       float dt) {
+    const camera::AimFrame frame = state.CurrentAimFrame();
+    float depth = 0.0f;
+    if (!camera::depth_probe::Update(static_cast<int>(dc.Width()), static_cast<int>(dc.Height()),
+                                     aimValid && frame.valid, frame.ndcX, frame.ndcY, depth))
+        return;
+    g_lastDepth = depth;
+    ++g_depthReads;
+
+    float measured = 0.0f;
+    if (!camera::AimDistanceFromDepth(frame, depth, measured)) {
+        // Sky: there is no surface to stay glued to, and a point at infinity has
+        // no parallax.
+        ClearAimDistance(state);
+        return;
+    }
+    if (measured < kMinAimDistance) measured = kMinAimDistance;
+    ReportFirstDistance(measured);
+
+    if (g_aimDistance <= 0.0f)
+        g_aimDistance = measured;
+    else
+        g_aimDistance +=
+            (measured - g_aimDistance) * (1.0f - expf(-dt * 1000.0f / kAimDistanceSmoothingMs));
+    state.SetAimDistance(g_aimDistance);
+}
+
 void DrawReticle(rendering::DX11DrawContext& dc, bool aimValid, float ndcX, float ndcY) {
-    // The game aims where it always did, so the marker moves to wherever that
-    // direction now projects in the rotated view.
+    // The game aims where it always did, so the marker moves to wherever the
+    // point it is aimed at now projects in the rotated view.
     const float cx = dc.Width() * 0.5f;
     const float cy = dc.Height() * 0.5f;
     const float sx = aimValid ? cx + ndcX * cx : cx;
@@ -143,8 +216,9 @@ void ReportProgress() {
     static int frame = 0;
     if ((++frame % kPoseLogInterval) != 0) return;
     const camera::HeadPose pose = camera::State().CurrentPose();
-    logging::Line("camera: yaw=%.2f pitch=%.2f roll=%.2f off=(%.3f %.3f %.3f)", pose.yaw,
-                  pose.pitch, pose.roll, pose.offset[0], pose.offset[1], pose.offset[2]);
+    logging::Line("camera: yaw=%.2f pitch=%.2f roll=%.2f off=(%.3f %.3f %.3f) aim=%.2fm "
+                  "depth=%.6f reads=%d", pose.yaw, pose.pitch, pose.roll, pose.offset[0],
+                  pose.offset[1], pose.offset[2], g_aimDistance, g_lastDepth, g_depthReads);
 }
 
 void OnRender(rendering::DX11DrawContext& dc) {
@@ -162,6 +236,7 @@ void OnRender(rendering::DX11DrawContext& dc) {
     if (!state.HaveReferenceView()) {
         state.ClearPose();
         state.ClearAim();
+        ClearAimDistance(state);
         return;
     }
     static bool pipelineStarted = false;
@@ -177,6 +252,7 @@ void OnRender(rendering::DX11DrawContext& dc) {
     if (!GameWindowActive() || camera::game_state::IsPaused()) {
         state.ClearPose();
         state.ClearAim();
+        ClearAimDistance(state);
         // Put the game's interaction prompt back where it draws it, so the HUD
         // is not left offset behind a menu.
         hud_prompt::Update(0.0f, 0.0f, false);
@@ -186,6 +262,7 @@ void OnRender(rendering::DX11DrawContext& dc) {
     if (!UpdatePose(dt)) {
         state.ClearPose();
         state.ClearAim();
+        ClearAimDistance(state);
     }
 
     const bool aimValid = state.AimValid() && state.Enabled();
@@ -196,6 +273,10 @@ void OnRender(rendering::DX11DrawContext& dc) {
     // The game's own interaction prompt is authored at screen centre; move it
     // onto the same aim point so "E USE" tracks the reticle.
     hud_prompt::Update(ndcX, ndcY, aimValid);
+
+    // After the reticle, not before: the distance measured here is what the NEXT
+    // frame projects with, so it is read at the point the aim was just drawn.
+    UpdateAimDistance(dc, state, aimValid, dt);
 
     ReportProgress();
 }
@@ -261,6 +342,7 @@ void Install(UdpReceiver& receiver) {
     intro_skip::Install();
     engine::Install();
     constant_buffers::Install();
+    depth_probe::Install();
 }
 
 void SetEnabled(bool enabled) { State().SetEnabled(enabled); }
@@ -306,6 +388,7 @@ const char* CycleInjectionMode() {
 
 void Shutdown() {
     g_overlay.Remove();
+    depth_probe::Shutdown();
     MH_Uninitialize();
 }
 

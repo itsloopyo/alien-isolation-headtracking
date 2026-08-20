@@ -110,9 +110,8 @@ bool InjectionState::BuildHeadTransform(const float* worldUpCam, HeadTransform& 
     return transform.Build(pose, world ? worldUpCam : kCameraUp);
 }
 
-void InjectionState::PublishAim(float ndcX, float ndcY) {
-    m_aimNdcX = ndcX;
-    m_aimNdcY = ndcY;
+void InjectionState::PublishAim(const AimFrame& frame) {
+    m_aimFrame = frame;
     m_aimValid = true;
 }
 
@@ -121,9 +120,15 @@ void InjectionState::ClearAim() { m_aimValid = false; }
 bool InjectionState::AimValid() const { return m_aimValid; }
 
 void InjectionState::GetAim(float& ndcX, float& ndcY) const {
-    ndcX = m_aimNdcX;
-    ndcY = m_aimNdcY;
+    ndcX = m_aimFrame.ndcX;
+    ndcY = m_aimFrame.ndcY;
 }
+
+AimFrame InjectionState::CurrentAimFrame() const { return m_aimFrame; }
+
+void InjectionState::SetAimDistance(float distance) { m_aimDistance = distance; }
+
+float InjectionState::AimDistance() const { return m_aimDistance; }
 
 void InjectionState::SetReferenceView(const float* view) {
     mat::Copy16(view, m_referenceView);
