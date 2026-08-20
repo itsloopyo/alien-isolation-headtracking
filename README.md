@@ -22,7 +22,7 @@
 ## Requirements
 
 - Alien: Isolation on [Steam](https://store.steampowered.com/app/214490/) (App ID 214490), the 2015 retail build.
-- An OpenTrack-compatible head tracker. [OpenTrack](https://github.com/opentrack/opentrack) is free and supports webcams, phones, and VR headsets.
+- An OpenTrack-compatible head tracker: [OpenTrack](https://github.com/opentrack/opentrack) with a webcam or VR headset, or a phone app that speaks the OpenTrack UDP protocol.
 - Windows 10 or 11. The game is 32-bit, so the mod ships as a 32-bit `.asi`.
 
 ## Installation
@@ -82,7 +82,14 @@ The Nexus release ZIP contains only `AlienIsolationHeadTracking.asi`, for users 
 
 ### Phone App Setup
 
-Apps like SmoothTrack, Head Tracker, or opentrack-android can send directly to the PC. If the app already smooths its output, point its UDP output at the PC's LAN IP on port `4242` and skip OpenTrack. To apply OpenTrack's curve mapping instead, send from the phone into OpenTrack as the input and let OpenTrack relay UDP to `127.0.0.1:4242`.
+Phone trackers generally all speak OpenTrack UDP, but they differ in how much filtering they do on the phone, and that is what decides how you should wire them up:
+
+- **Direct send**: point the app at your PC's LAN IP on port `4242`. This only works if the app filters its own signal on-device. A raw or lightly filtered feed sent straight to the mod will jitter, because the mod's smoothing is sized to take the edge off a clean signal rather than to rescue a noisy one. [Headcam](https://headcam.app) (my free tracking app) filters on-device, so can send directly.
+
+  Not sure about yours? Try direct first. Hold your head still and watch the view: if it drifts or shakes, switch to the OpenTrack route below.
+- **Via OpenTrack**: have the phone send to OpenTrack on a different port (for example 5252), then OpenTrack's Output forwards to `127.0.0.1:4242`. Apps that send a raw or lightly filtered signal need this route so OpenTrack's filters and curve mapping can clean the feed up first.
+
+The mod's own smoothing and deadzone apply either way, but they are sized to take the edge off an already clean signal, not to rescue a noisy one.
 
 ## Controls
 
@@ -147,6 +154,7 @@ YawModeKey=0x22    ; Page Down
 **Jittery or unstable tracking**
 - Raise `LocalSmoothing` (tracker on this PC) or `RemoteSmoothing` (phone or other network device) toward `1.0` in `AlienIsolationHeadTracking.ini`.
 - Raise the smoothing in OpenTrack (or in your phone app, if it sends directly).
+- If a phone app sends straight to `4242` and the view will not settle, route it through OpenTrack instead (see [Phone App Setup](#phone-app-setup)) and select a filter, e.g. Accela, to clean up the signal.
 - Add a small deadzone in OpenTrack's mapping curves to ignore tiny head movements.
 - For wireless or phone trackers, prefer a wired or 5 GHz connection; dropped packets read as jitter.
 
