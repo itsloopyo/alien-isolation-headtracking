@@ -134,6 +134,8 @@ constexpr BuildProfile kSteamProfile_20150217 = {
     },
 };
 
+inline const BuildProfile& ActiveProfile() { return kSteamProfile_20150217; }
+
 inline const OffsetTable& ActiveOffsets() { return kSteamProfile_20150217.offsets; }
 
 inline bool MatchesKnownBuild() {

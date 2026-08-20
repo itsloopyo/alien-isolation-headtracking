@@ -28,26 +28,15 @@ std::atomic<bool> g_trackingEnabled{true};
 
 // Doctrine nav-cluster hotkeys, with the Ctrl+Shift+<letter> chord
 // alternatives for keyboards without a nav cluster.
-constexpr int kVkRecenter = 0x24;      // Home
 constexpr int kVkToggle = 0x23;        // End
 constexpr int kVkTrackingMode = 0x21;  // Page Up
 constexpr int kVkFrustum = 0x2D;       // Insert
 constexpr int kVkInjectMode = 0x2E;    // Delete
-constexpr int kChordRecenter = 'T';
 constexpr int kChordToggle = 'Y';
 constexpr int kChordTrackingMode = 'G';
 constexpr int kChordYawMode = 'H';
 constexpr int kChordFrustum = 'U';
 constexpr int kChordInjectMode = 'J';
-
-void DoRecenter() {
-#if defined(AIHT_CAMERA)
-    camera::Recenter();
-#else
-    g_receiver.Recenter();
-#endif
-    logging::Line("Recenter");
-}
 
 void DoToggleTracking() {
     bool on = !g_trackingEnabled.load();
@@ -142,23 +131,43 @@ void CenterGameWindow() {
     logging::Line("window: centred %dx%d at %d,%d", width, height, x, y);
 }
 
-std::wstring LogPathNextToExe() {
+std::wstring ExeDirFileW(const wchar_t* name) {
     wchar_t exePath[MAX_PATH] = {};
     // A failure leaves the buffer untouched and a truncated result is not
     // guaranteed to be terminated, so the length has to be checked before the
     // buffer is read as a string. Either way the process directory is the only
     // place left to write, and the log cannot report its own absence.
     const DWORD len = GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-    if (len == 0 || len >= MAX_PATH) return L".\\AlienIsolationHeadTracking.log";
+    if (len == 0 || len >= MAX_PATH) return std::wstring(L".\\") + name;
     const std::wstring p(exePath, len);
     const size_t slash = p.find_last_of(L"\\/");
     const std::wstring dir = (slash == std::wstring::npos) ? L"." : p.substr(0, slash);
-    return dir + L"\\AlienIsolationHeadTracking.log";
+    return dir + L"\\" + name;
 }
 
 void InitThread() {
-    logging::Open(LogPathNextToExe());
+    const std::wstring logPath = ExeDirFileW(L"AlienIsolationHeadTracking.log");
+    // The crash handler installed below writes its report into this log, and the
+    // relaunch the player makes to go and read it is what would destroy it. One
+    // previous generation survives that relaunch; anything older is history
+    // nobody asked for.
+    // Named, not a temporary in the call: a temporary's destructor runs at the
+    // end of the full-expression, and the deallocation can overwrite the
+    // thread's last-error value before it is read.
+    const std::wstring prevPath = ExeDirFileW(L"AlienIsolationHeadTracking.prev.log");
+    const BOOL rotated = MoveFileExW(
+        logPath.c_str(), prevPath.c_str(), MOVEFILE_REPLACE_EXISTING);
+    const DWORD rotateError = rotated ? 0 : GetLastError();
+    logging::Open(logPath);
     logging::Line("=== %s v%s ===", AIHT_NAME, AIHT_VERSION);
+    // A .prev.log another process holds open cannot be replaced, and the Open
+    // above has just truncated the generation that would have gone into it.
+    if (!rotated && rotateError != ERROR_FILE_NOT_FOUND) {
+        logging::Line("WARNING: could not rotate the previous log into "
+                      "AlienIsolationHeadTracking.prev.log (error %lu); the previous "
+                      "run's log is gone. Close anything holding the .prev.log open.",
+                      rotateError);
+    }
     diagnostics::InstallCrashHandler();
 
     memory::PeFingerprint fp{};
@@ -176,22 +185,20 @@ void InitThread() {
         logging::Line("UDP receiver not bound yet (retry loop active)");
     }
 
-    g_hotkeys.AddHotkey(kVkRecenter, input::NavGuarded(&DoRecenter));
     g_hotkeys.AddHotkey(kVkToggle, input::NavGuarded(&DoToggleTracking));
     g_hotkeys.AddHotkey(kVkTrackingMode, input::NavGuarded(&DoCycleTrackingMode));
     g_hotkeys.AddHotkey(config::Get().yaw_mode_key, input::NavGuarded(&DoToggleYawMode));
     g_hotkeys.AddHotkey(kVkFrustum, input::NavGuarded(&DoToggleFrustum));
     g_hotkeys.AddHotkey(kVkInjectMode, input::NavGuarded(&DoToggleInjectMode));
-    g_hotkeys.AddHotkey(kChordRecenter, input::ChordGuarded(&DoRecenter));
     g_hotkeys.AddHotkey(kChordToggle, input::ChordGuarded(&DoToggleTracking));
     g_hotkeys.AddHotkey(kChordTrackingMode, input::ChordGuarded(&DoCycleTrackingMode));
     g_hotkeys.AddHotkey(kChordYawMode, input::ChordGuarded(&DoToggleYawMode));
     g_hotkeys.AddHotkey(kChordFrustum, input::ChordGuarded(&DoToggleFrustum));
     g_hotkeys.AddHotkey(kChordInjectMode, input::ChordGuarded(&DoToggleInjectMode));
     g_hotkeys.Start(16);
-    logging::Line("Hotkeys: Home=recenter End=toggle PageUp=tracking-mode "
+    logging::Line("Hotkeys: End=toggle PageUp=tracking-mode "
                   "PageDown=yaw-mode Insert=frustum-widen Delete=injection-mode "
-                  "(chords: Ctrl+Shift+T/Y/G/H/U/J)");
+                  "(chords: Ctrl+Shift+Y/G/H/U/J)");
 
     // On its own thread: it waits for the window to exist, and the hook install
     // below must not be delayed behind that (the Steam overlay hooks the same
@@ -217,14 +224,6 @@ void InitThread() {
                           (receiving && g_receiver.IsRemoteConnection()) ? " (remote)" : "");
             wasReceiving = receiving;
         }
-#if !defined(AIHT_CAMERA)
-        // With the camera hook built in, HeadTrackingSession consumes this on
-        // the render thread; consuming it here too would steal the request.
-        if (receiving && g_receiver.TryConsumeRecenterRequest()) {
-            g_receiver.Recenter();
-            logging::Line("Recentered by tracker app");
-        }
-#endif
         if (receiving && (++tick % 5) == 0) {
             float y = 0, p = 0, r = 0;
             g_receiver.GetRotation(y, p, r);

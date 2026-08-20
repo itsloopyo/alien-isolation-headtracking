@@ -25,7 +25,7 @@
 :: --- CONFIG BLOCK ---
 set "GAME_ID=alien-isolation"
 set "MOD_DISPLAY_NAME=Alien: Isolation Head Tracking"
-set "MOD_DLLS=AlienIsolationHeadTracking.asi"
+set "MOD_DLLS=AlienIsolationHeadTracking.asi AlienIsolationHeadTracking.log AlienIsolationHeadTracking.prev.log"
 set "MOD_INTERNAL_NAME=AlienIsolationHeadTracking"
 set "STATE_FILE=.headtracking-state.json"
 set "FRAMEWORK_TYPE=ASILoader"

@@ -16,6 +16,13 @@ struct Settings {
     // runs. Off, the helmet stays where the body is looking: turn far enough and
     // you are looking at the back of a shell that was never modelled.
     bool helmet_follows_head = true;
+
+    // Smoothing is picked per connection from the packet source address: a
+    // tracker running on this machine (loopback) uses local_smoothing, a phone
+    // or other device on the network uses remote_smoothing. Both cover rotation
+    // and position. 0 = none, 1 = heavy.
+    float local_smoothing = 0.0f;
+    float remote_smoothing = 0.15f;
 };
 
 // Reads the INI on first call, writing a commented default file when none is

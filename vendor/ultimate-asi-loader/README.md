@@ -10,7 +10,7 @@ Refresh manually with `pixi run update-deps`, then commit.
 - Commit: `ab722befd52581a34449b603926cfab476e66b05`
 - Asset: `Ultimate-ASI-Loader.zip`
 - dinput8.dll SHA-256: `c7277e832f6f07af64903a99ecebab2936260cbf55eda70787c5d7b2d5b9fe60`
-- Fetched at: 2026-08-11T21:33:16.7793564+01:00
+- Fetched at: 2026-08-20T09:10:46.4444410+01:00
 
 `dinput8.dll` is extracted from the upstream x86 zip untouched. install.cmd copies it
 into the Alien: Isolation game directory as xinput1_3.dll (the proxy slot AI.exe

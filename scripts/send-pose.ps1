@@ -21,10 +21,10 @@ for ($i = 0; $i -lt 6; $i++) {
     [BitConverter]::GetBytes([double]$vals[$i]).CopyTo($bytes, $i * 8)
 }
 
-# The mod recentres on the first pose of a connection, so a stream that opens
-# straight onto the target pose has that pose taken as the new centre and the
-# view never moves. Warming up with neutral on the SAME stream spends the
-# recentre on zero, and the target that follows reads as real head movement.
+# Warm up with neutral on the SAME stream before the target pose, so the
+# smoothing and the interpolator settle on a known baseline first. Opening
+# straight onto the target makes the first frames a blend of nothing and the
+# target, which reads as a slower ramp rather than a clean step.
 $neutral = New-Object byte[] 48
 $deadline = (Get-Date).AddSeconds($WarmupSeconds)
 while ((Get-Date) -lt $deadline) {

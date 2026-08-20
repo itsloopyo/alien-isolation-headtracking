@@ -9,9 +9,9 @@
 
 # Alien: Isolation Head Tracking
 
-6DOF head tracking for Alien: Isolation that moves the in-game camera with your head while your mouse or controller keeps aiming, driven by OpenTrack over UDP, with no VR headset required.
+![Mod GIF](https://raw.githubusercontent.com/itsloopyo/alien-isolation-headtracking/main/assets/readme-clip.gif)
 
-<!-- ![Mod GIF](https://raw.githubusercontent.com/itsloopyo/alien-isolation-headtracking/main/assets/readme-clip.gif) -->
+6DOF head tracking for Alien: Isolation that moves the in-game camera with your head while your mouse or controller keeps aiming, driven by OpenTrack over UDP, with no VR headset required.
 
 ## Features
 
@@ -90,7 +90,6 @@ Two equivalent binding sets - use whichever your keyboard has:
 
 | Action                    | Nav-cluster | Chord          |
 |---------------------------|-------------|----------------|
-| Recenter                  | `Home`      | `Ctrl+Shift+T` |
 | Toggle tracking           | `End`       | `Ctrl+Shift+Y` |
 | Cycle tracking mode       | `Page Up`   | `Ctrl+Shift+G` |
 | Toggle yaw mode           | `Page Down` | `Ctrl+Shift+H` |
@@ -116,6 +115,10 @@ The config file is generated on first run next to `AI.exe` at `AlienIsolationHea
 WorldSpaceYaw=true
 ; Keep the space suit helmet on your head instead of leaving it facing where the body looks
 HelmetFollowsHead=true
+; Smoothing applied when the tracker runs on this machine (loopback). 0 = no smoothing, 1 = heavy
+LocalSmoothing=0.0
+; Smoothing applied when the tracker is a remote device on the network. 0 = no smoothing, 1 = heavy
+RemoteSmoothing=0.15
 
 [Hotkeys]
 ; Virtual-key code for the yaw-mode toggle.
@@ -125,6 +128,8 @@ YawModeKey=0x22    ; Page Down
 `WorldSpaceYaw=true` (default) keeps yaw rotating around the world up-axis, so "up" stays gravity-aligned even when you look up or down. Set it to `false` for camera-local yaw, which follows the camera's current up-axis. Toggle it at runtime with `Page Down` or `Ctrl+Shift+H` without restarting.
 
 `HelmetFollowsHead=true` (default) keeps the space suit helmet on your head as you look around, instead of it staying fixed to the body and leaving you looking out through the side of it.
+
+`LocalSmoothing` and `RemoteSmoothing` are picked per connection from the address the packets arrive from, and both cover rotation and position. A tracker on this PC (OpenTrack over loopback) uses `LocalSmoothing`, which defaults to `0.0` for zero-latency tracking; a phone or other device on the network uses `RemoteSmoothing`, which defaults to `0.15` because network jitter needs it. Switching between the two is picked up without restarting the game.
 
 ## Troubleshooting
 
@@ -136,10 +141,11 @@ YawModeKey=0x22    ; Page Down
 **No tracking response**
 - Make sure OpenTrack is running and Started, with output set to UDP on `127.0.0.1:4242`.
 - Check that port `4242` is not blocked by your firewall.
-- Open `AlienIsolationHeadTracking.log` and read the lines about the UDP connection and incoming poses.
+- Open `AlienIsolationHeadTracking.log` and read the lines about the UDP connection and incoming poses. The log starts fresh every launch; the previous run is kept as `AlienIsolationHeadTracking.prev.log`, which is the one to send after a crash.
 - If another tracker or modded game already holds port `4242`, close it. The mod retries automatically.
 
 **Jittery or unstable tracking**
+- Raise `LocalSmoothing` (tracker on this PC) or `RemoteSmoothing` (phone or other network device) toward `1.0` in `AlienIsolationHeadTracking.ini`.
 - Raise the smoothing in OpenTrack (or in your phone app, if it sends directly).
 - Add a small deadzone in OpenTrack's mapping curves to ignore tiny head movements.
 - For wireless or phone trackers, prefer a wired or 5 GHz connection; dropped packets read as jitter.

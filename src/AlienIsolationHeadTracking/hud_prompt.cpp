@@ -93,7 +93,17 @@ void Update(float ndcX, float ndcY, bool valid) {
         const unsigned total =
             *reinterpret_cast<unsigned*>(static_cast<char*>(mgr) + ui.manager_overlay_count);
         if (arr && total <= kMaxOverlays) {
-            const bool announce = static_cast<int>(total) != g_lastOverlayCount;
+            // Capped for the session. The count is re-read live, so a HUD element
+            // that flickers on alternating frames (motion tracker, interaction
+            // prompt) makes this true every frame, and the listing below is one
+            // line per overlay - up to kMaxOverlays in a single frame, written
+            // while holding the engine's lock. The names are a one-time discovery
+            // aid, so a bounded sample is all they were ever worth.
+            static int s_overlayAnnouncements = 0;
+            constexpr int kMaxOverlayAnnouncements = 8;
+            const bool announce = static_cast<int>(total) != g_lastOverlayCount &&
+                                  s_overlayAnnouncements < kMaxOverlayAnnouncements;
+            if (announce) ++s_overlayAnnouncements;
             for (unsigned i = 0; i < total; ++i) {
                 void* o = arr[i];
                 if (!o) continue;

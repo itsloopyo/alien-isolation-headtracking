@@ -150,12 +150,22 @@ void RevertEntityToClean() {
     }
 }
 
-// One-shot diagnostic: says once why the rotation is or is not being applied,
-// instead of leaving "nothing moved" to be interpreted.
+// Says why the rotation is or is not being applied, once per distinct reason,
+// instead of leaving "nothing moved" to be interpreted. Latched per reason
+// rather than counted: the reason flips every frame around the neutral pose
+// (BuildHeadTransform refuses a neutral pose, so a player holding still
+// alternates between "applied" and "no head pose yet" at frame rate), and a
+// budget of reason changes is spent in under a second - long before "faulted"
+// or "quaternion not unit" ever happen. Every call site passes a string
+// literal, so the pointer identifies the reason.
+constexpr int kMaxRotateReasons = 12;
+
 void ReportRotate(const char* why) {
-    static const char* last = nullptr;
-    if (last == why) return;
-    last = why;
+    static const char* seen[kMaxRotateReasons] = {};
+    static int count = 0;
+    for (int i = 0; i < count; ++i)
+        if (seen[i] == why) return;
+    if (count < kMaxRotateReasons) seen[count++] = why;
     logging::Line("camera: rotate -> %s", why);
 }
 
@@ -541,6 +551,9 @@ void Install() {
         State().SetMode(Mode::ConstantBuffers);
         return;
     }
+
+    logging::Line("camera: build profile %s matched; installing pinned hooks",
+                  builds::ActiveProfile().name);
 
     const builds::OffsetTable::Hooks& hooks = builds::ActiveOffsets().hooks;
     InstallHook("look-at", hooks.camera_inputs, &CameraInputsDetour,

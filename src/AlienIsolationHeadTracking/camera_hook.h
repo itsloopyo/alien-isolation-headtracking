@@ -11,9 +11,6 @@ namespace camera {
 // hooks, and the constant-buffer hook. The receiver must outlive the hooks.
 void Install(cameraunlock::UdpReceiver& receiver);
 
-// Sets the current head pose as centre.
-void Recenter();
-
 // Master on/off for view injection.
 void SetEnabled(bool enabled);
 bool IsEnabled();

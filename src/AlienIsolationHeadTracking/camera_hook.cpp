@@ -14,6 +14,7 @@
 #include "intro_skip.h"
 
 #include "cameraunlock/logging/file_log.h"
+#include "cameraunlock/math/smoothing_utils.h"
 #include "cameraunlock/protocol/udp_receiver.h"
 #include "cameraunlock/time/frame_clock.h"
 #include "cameraunlock/tracking/head_tracking_session.h"
@@ -44,6 +45,13 @@ void OverlayLog(const char* msg) { logging::Line("%s", msg); }
 HeadTrackingSession<UdpReceiver>* g_session = nullptr;
 time::FrameClock g_clock;
 
+// Last connection locality seen, for the log line only. The session re-reads the
+// receiver's classification every Update and points both processors at the
+// matching smoothing parameter itself, so a tracker swap (local OpenTrack to a
+// phone on WiFi, or back) takes effect without a restart.
+bool g_isRemoteConnection = false;
+bool g_remoteConnectionKnown = false;
+
 // How far the frustum opens when widening is switched on.
 constexpr float kWidenedFrustum = 0.6f;
 
@@ -71,13 +79,31 @@ bool GameWindowActive() {
     return pid == GetCurrentProcessId();
 }
 
+// Reports which of the two smoothing parameters the session is now using. The
+// receiver classifies the sender address and the session applies it; nothing
+// here repeats either.
+void LogConnectionLocality() {
+    const bool isRemote = g_session->IsRemoteConnection();
+    if (g_remoteConnectionKnown && isRemote == g_isRemoteConnection) return;
+    g_isRemoteConnection = isRemote;
+    g_remoteConnectionKnown = true;
+
+    const double effective = math::GetEffectiveSmoothing(
+        config::Get().local_smoothing, config::Get().remote_smoothing, isRemote);
+    logging::Line("camera: tracker connection is %s; smoothing=%.2f",
+                  isRemote ? "remote" : "local", effective);
+}
+
 // Reads the tracker and publishes this frame's pose. False when there is
 // nothing fresh, which parks the reticle back at screen centre.
 bool UpdatePose(float dt) {
     if (!g_session) return false;
 
-    const bool wasCentered = g_session->HasCentered();
     const bool fresh = g_session->Update(dt);
+    // Only once a packet has actually parsed: the receiver's locality flag
+    // starts at false, so reporting it before then reads as proof a local
+    // tracker connected when nothing has arrived.
+    if (fresh) LogConnectionLocality();
     if (fresh) {
         camera::HeadPose pose;
         g_session->GetRotation(pose.yaw, pose.pitch, pose.roll);
@@ -95,8 +121,6 @@ bool UpdatePose(float dt) {
         }
         camera::State().PublishPose(pose);
     }
-    if (!wasCentered && g_session->HasCentered())
-        logging::Line("camera: centred on a held pose");
     return fresh;
 }
 
@@ -186,8 +210,9 @@ void Install(UdpReceiver& receiver) {
     constant_buffers::Initialize();
 
     static HeadTrackingSession<UdpReceiver> session(receiver);
-    static_assert(HeadTrackingSession<UdpReceiver>::kHasRemoteRecenter,
-                  "receiver must forward tracker-app recenter requests");
+    static_assert(HeadTrackingSession<UdpReceiver>::kHasRemoteConnection,
+                  "receiver must classify connection locality, or smoothing "
+                  "silently stays on the local parameter forever");
     g_session = &session;
 
     State().SetWorldSpaceYaw(config::Get().world_space_yaw);
@@ -211,6 +236,12 @@ void Install(UdpReceiver& receiver) {
     position.invert_z = false;
     session.GetPositionProcessor().SetSettings(position);
 
+    // After SetSettings, which would otherwise reset what the user configured.
+    // Both values go to rotation and position; the session picks one per
+    // connection from the address the packets arrive from.
+    session.SetLocalSmoothing(config::Get().local_smoothing);
+    session.SetRemoteSmoothing(config::Get().remote_smoothing);
+
     if (MH_Initialize() != MH_OK) {
         logging::Line("camera: MH_Initialize failed");
         return;
@@ -230,10 +261,6 @@ void Install(UdpReceiver& receiver) {
     intro_skip::Install();
     engine::Install();
     constant_buffers::Install();
-}
-
-void Recenter() {
-    if (g_session) g_session->Recenter();
 }
 
 void SetEnabled(bool enabled) { State().SetEnabled(enabled); }
