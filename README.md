@@ -9,8 +9,6 @@
 
 # Alien: Isolation Head Tracking
 
-![Mod GIF](https://raw.githubusercontent.com/itsloopyo/alien-isolation-headtracking/main/assets/readme-clip.gif)
-
 6DOF head tracking for Alien: Isolation that moves the in-game camera with your head while your mouse or controller keeps aiming, driven by OpenTrack over UDP, with no VR headset required.
 
 ## Features
@@ -122,6 +120,8 @@ The config file is generated on first run next to `AI.exe` at `AlienIsolationHea
 WorldSpaceYaw=true
 ; Keep the space suit helmet on your head instead of leaving it facing where the body looks
 HelmetFollowsHead=true
+; Skip the boot splash screens. These carry the developer and publisher credits, so this is off unless you turn it on
+SkipIntroMovies=false
 ; Smoothing applied when the tracker runs on this machine (loopback). 0 = no smoothing, 1 = heavy
 LocalSmoothing=0.0
 ; Smoothing applied when the tracker is a remote device on the network. 0 = no smoothing, 1 = heavy
@@ -135,6 +135,13 @@ YawModeKey=0x22    ; Page Down
 `WorldSpaceYaw=true` (default) keeps yaw rotating around the world up-axis, so "up" stays gravity-aligned even when you look up or down. Set it to `false` for camera-local yaw, which follows the camera's current up-axis. Toggle it at runtime with `Page Down` or `Ctrl+Shift+H` without restarting.
 
 `HelmetFollowsHead=true` (default) keeps the space suit helmet on your head as you look around, instead of it staying fixed to the body and leaving you looking out through the side of it.
+
+`SkipIntroMovies=false` (default) leaves the game's boot sequence exactly as
+Creative Assembly shipped it. Set it to `true` and the mod answers yes to the
+game's own `skip_frontend` flag, which drops you at the title screen without the
+company splash screens. It is off by default because those screens are where the
+game's credits are shown; skipping them is your call, not something head
+tracking should do behind your back.
 
 `LocalSmoothing` and `RemoteSmoothing` are picked per connection from the address the packets arrive from, and both cover rotation and position. A tracker on this PC (OpenTrack over loopback) uses `LocalSmoothing`, which defaults to `0.0` for zero-latency tracking; a phone or other device on the network uses `RemoteSmoothing`, which defaults to `0.15` because network jitter needs it. Switching between the two is picked up without restarting the game.
 
@@ -207,4 +214,9 @@ MIT License - see [LICENSE](LICENSE) for details. Third-party components are lis
 
 ## Disclaimer
 
-This mod is not affiliated with, endorsed by, or supported by Creative Assembly or SEGA. Use at your own risk.
+This mod is not affiliated with, endorsed by, or supported by Creative Assembly,
+SEGA, or 20th Century Studios. Alien: Isolation, the Alien franchise, and all
+related names and marks are the property of their respective owners, and are used
+here only to identify the game this mod is compatible with. No game code, assets,
+or media are included in this repository or in its releases - the mod requires
+your own legitimately purchased copy of the game. Use at your own risk.

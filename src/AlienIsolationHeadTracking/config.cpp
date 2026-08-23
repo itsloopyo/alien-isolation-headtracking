@@ -58,6 +58,9 @@ void WriteDefaults(const std::string& path, const Settings& defaults) {
     writer.WriteComment("Keep the space suit helmet on your head instead of leaving it "
                         "facing where the body looks");
     writer.WriteString("HelmetFollowsHead", defaults.helmet_follows_head ? "true" : "false");
+    writer.WriteComment("Skip the boot splash screens. These carry the developer and "
+                        "publisher credits, so this is off unless you turn it on");
+    writer.WriteString("SkipIntroMovies", defaults.skip_intro_movies ? "true" : "false");
     writer.WriteComment("Smoothing applied when the tracker runs on this machine (loopback). "
                         "0 = no smoothing, 1 = heavy");
     writer.WriteDouble("LocalSmoothing", defaults.local_smoothing);
@@ -74,10 +77,11 @@ void WriteDefaults(const std::string& path, const Settings& defaults) {
 // Logged on both paths, so a report from a first launch (which has no ini yet)
 // still says what the mod is running with.
 void ReportSettings(const Settings& settings) {
-    logging::Line("config: WorldSpaceYaw=%s HelmetFollowsHead=%s LocalSmoothing=%.2f "
-                  "RemoteSmoothing=%.2f YawModeKey=0x%02X",
+    logging::Line("config: WorldSpaceYaw=%s HelmetFollowsHead=%s SkipIntroMovies=%s "
+                  "LocalSmoothing=%.2f RemoteSmoothing=%.2f YawModeKey=0x%02X",
                   settings.world_space_yaw ? "true" : "false",
-                  settings.helmet_follows_head ? "true" : "false", settings.local_smoothing,
+                  settings.helmet_follows_head ? "true" : "false",
+                  settings.skip_intro_movies ? "true" : "false", settings.local_smoothing,
                   settings.remote_smoothing, settings.yaw_mode_key);
 }
 
@@ -96,6 +100,8 @@ Settings Load() {
         reader.ReadBool("General", "WorldSpaceYaw", settings.world_space_yaw);
     settings.helmet_follows_head =
         reader.ReadBool("General", "HelmetFollowsHead", settings.helmet_follows_head);
+    settings.skip_intro_movies =
+        reader.ReadBool("General", "SkipIntroMovies", settings.skip_intro_movies);
     // Each key falls back to its own default (local 0.0, remote 0.15), not to a
     // shared one: a bad RemoteSmoothing dropping to the local default would
     // leave a phone's network jitter entirely unsmoothed.

@@ -17,6 +17,13 @@ struct Settings {
     // you are looking at the back of a shell that was never modelled.
     bool helmet_follows_head = true;
 
+    // Skips the boot splash sequence by answering yes to the game's own
+    // skip_frontend flag. Off by default and deliberately opt-in: those splash
+    // screens carry the developer, publisher and rights-holder credits, and
+    // suppressing them is the player's call to make, not a side effect of
+    // installing head tracking.
+    bool skip_intro_movies = false;
+
     // Smoothing is picked per connection from the packet source address: a
     // tracker running on this machine (loopback) uses local_smoothing, a phone
     // or other device on the network uses remote_smoothing. Both cover rotation

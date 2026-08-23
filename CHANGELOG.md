@@ -36,7 +36,20 @@ All notable changes to this project are documented here. Format based on
   (something else is holding the `.prev.log` open) is reported with its Windows
   error instead of silently losing the previous generation.
 
+### Removed
+- Removed the Alien: Isolation gameplay clip from `assets/`. It was the game's
+  own audiovisual work, redistributed with every clone of this repository and
+  every release checkout. Demo media belongs on the mod's Nexus and Lopari
+  pages, not in the source tree.
+
 ### Fixed
+- The boot splash screens now play by default. The `skip_frontend` detour is
+  behind a new `SkipIntroMovies` INI key, off unless the player turns it on:
+  those screens carry the developer, publisher and rights-holder credits, and
+  suppressing them is not something head tracking should do on its own.
+- `THIRD-PARTY-NOTICES.md` names the cameraunlock-core commit the submodule
+  actually points at, and credits 20th Century Studios alongside SEGA and
+  Creative Assembly.
 - The `camera: rotate -> ...` diagnostic is now latched per distinct reason. A
   player holding a neutral head pose flipped its reason every frame, which wrote
   megabytes an hour into the log; the running cap that replaced it was spent in

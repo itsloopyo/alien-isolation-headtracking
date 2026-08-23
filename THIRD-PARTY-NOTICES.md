@@ -31,7 +31,7 @@ Copyright (c) 2009-2017 Tsuda Kageyu
 
 ## cameraunlock-core
 
-- **Version:** commit `adc1e1c`
+- **Version:** commit `3465659`
 - **License:** MIT
 - **Upstream:** https://github.com/itsloopyo/cameraunlock-core
 - **Usage:** Shared CameraUnlock protocol, processing, hook, and rendering
@@ -55,7 +55,12 @@ Copyright (c) 2026 CameraUnlock
 
 ## Game
 
-Alien: Isolation is a trademark of SEGA, developed by Creative Assembly. This
-mod is an unofficial, fan-made add-on and is not affiliated with or endorsed by
-SEGA or Creative Assembly. It requires a legitimately purchased copy of the
-game.
+Alien: Isolation was developed by Creative Assembly and published by SEGA. The
+Alien franchise and its related marks are the property of 20th Century Studios.
+This mod is an unofficial, fan-made add-on and is not affiliated with or endorsed
+by any of them. Those names appear here only to identify the game this mod is
+compatible with.
+
+No game code, assets, media, or binaries are included in this repository or in
+its releases. The mod hooks the game in memory at runtime and requires a
+legitimately purchased copy to be of any use.

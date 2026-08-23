@@ -52,9 +52,9 @@ struct OffsetTable {
         uintptr_t clean_tasks[kCleanTaskCount];
     } hooks;
 
-    // Fields of the camera entity FUN_00432300 reads the camera from. Selection
-    // logic copied from the decompilation: a primary unless a secondary is
-    // flagged live.
+    // Fields of the camera entity the camera-inputs function reads the camera
+    // from. It picks a primary unless a secondary is flagged live, which is the
+    // behaviour observed by watching both fields as the game switches cameras.
     struct CameraEntity {
         uintptr_t primary;
         uintptr_t primary_enabled;

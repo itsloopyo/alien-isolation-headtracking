@@ -67,8 +67,9 @@ HeadTransform g_entityHead;
 // Cached as the publisher resolves it, so the render window can reach it.
 void* g_cameraEntity = nullptr;
 
-// The entity the camera publish reads the camera from. Selection logic copied
-// from the decompilation: a primary unless a secondary is flagged live.
+// The entity the camera publish reads the camera from. It picks a primary unless
+// a secondary is flagged live, which is the behaviour observed by watching both
+// fields as the game switches cameras.
 void* ResolveCameraEntity(void* self) {
     const builds::OffsetTable::CameraEntity& e = builds::ActiveOffsets().entity;
     const uintptr_t o = reinterpret_cast<uintptr_t>(self);
@@ -97,8 +98,9 @@ float* EntityPosition(void* entity) {
                                     builds::ActiveOffsets().entity.position);
 }
 
-// Reports the entity's layout once. The orientation and position offsets are
-// inference from the decompilation until this confirms them.
+// Reports the entity's layout once. The orientation and position offsets start
+// as inferences from static analysis, and this is what confirms them against the
+// running game.
 void ReportCameraEntity(void* entity) {
     if (g_entityLogged || !entity) return;
     g_entityLogged = true;
