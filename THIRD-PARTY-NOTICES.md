@@ -1,66 +1,212 @@
 # Third-Party Notices
 
-Alien: Isolation Head Tracking itself is MIT licensed (see `LICENSE`). It bundles
-or links the following components, which carry their own terms.
+AlienIsolationHeadTracking bundles, statically links, or credits the third-party components
+listed below. Each remains the property of its authors and is used under its own
+licence. Where a licence requires the copyright notice, the conditions and the
+disclaimer to accompany a binary distribution, the full text is reproduced here
+verbatim, and this file ships at the root of every release ZIP we publish.
+
+Nothing in this repository is derived from, or redistributes any part of,
+Alien: Isolation.
+
+| Component | Version | Licence | How it ships |
+|-----------|---------|---------|--------------|
+| Ultimate ASI Loader | v9.7.2 | MIT | Bundled verbatim in the installer ZIP |
+| MinHook | `d94c64d32ea3` | BSD-2-Clause | Compiled into `AlienIsolationHeadTracking.asi` |
+| cameraunlock-core | 3465659888b2270addac9de0b2a728f59a00360c | MIT | Compiled into `AlienIsolationHeadTracking.asi` |
+| OpenTrack | n/a | ISC | Not bundled; UDP protocol interoperability only |
+
+---
 
 ## Ultimate ASI Loader
 
-- **Version:** v9.7.2 (commit `ab722befd52581a34449b603926cfab476e66b05`)
-- **License:** MIT
-- **Upstream:** https://github.com/ThirteenAG/Ultimate-ASI-Loader
-- **Usage:** Renamed to `xinput1_3.dll` and dropped beside `AI.exe` so the game
-  loads our `.asi` plugin.
-- **Bundled:** yes. Bundled in the release ZIP and used as the install-time
-  source.
+Vendored at `vendor/ultimate-asi-loader/`, shipped in the installer ZIP and used as the
+install-time source. Taken from the upstream release asset untouched; the
+upstream licence file ships beside it at `vendor/ultimate-asi-loader/LICENSE`.
+
+- Upstream: https://github.com/ThirteenAG/Ultimate-ASI-Loader
+- Version: `v9.7.2`
+- Commit: `ab722befd52581a34449b603926cfab476e66b05`
+- SHA-256: `c7277e832f6f07af64903a99ecebab2936260cbf55eda70787c5d7b2d5b9fe60`
+
+```
+MIT License
 
 Copyright (c) 2023 ThirteenAG
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ---
 
 ## MinHook
 
-- **Version:** `master` (fetched and pinned at build time via CMake FetchContent)
-- **License:** BSD-2-Clause
-- **Upstream:** https://github.com/TsudaKageyu/minhook
-- **Usage:** Installs the DX11 `Present` hook and the camera-update hook.
-- **Bundled:** yes. Statically linked into `AlienIsolationHeadTracking.asi`.
+Fetched from upstream at configure time and compiled into `AlienIsolationHeadTracking.asi`.
 
-Copyright (c) 2009-2017 Tsuda Kageyu
+- Upstream: https://github.com/TsudaKageyu/minhook
+- Commit: `d94c64d32ea37bc4f5ee47d580709f70c6fb6080`
+
+MinHook carries two copyright holders: Tsuda Kageyu for MinHook itself, and
+Vyacheslav Patkov for the Hacker Disassembler Engine that `src/hde/` is built
+from. Both notices appear below exactly as upstream ships them.
+
+```
+MinHook - The Minimalistic API Hooking Library for x64/x86
+Copyright (C) 2009-2017 Tsuda Kageyu.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+Portions of this software are Copyright (c) 2008-2009, Vyacheslav Patkov.
+================================================================================
+Hacker Disassembler Engine 32 C
+Copyright (c) 2008-2009, Vyacheslav Patkov.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-------------------------------------------------------------------------------
+Hacker Disassembler Engine 64 C
+Copyright (c) 2008-2009, Vyacheslav Patkov.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
 
 ---
 
 ## cameraunlock-core
 
-- **Version:** commit `3465659`
-- **License:** MIT
-- **Upstream:** https://github.com/itsloopyo/cameraunlock-core
-- **Usage:** Shared CameraUnlock protocol, processing, hook, and rendering
-  library.
-- **Bundled:** yes. Statically linked into `AlienIsolationHeadTracking.asi`.
+Git submodule at `cameraunlock-core/`, compiled into `AlienIsolationHeadTracking.asi`. Our own code,
+MIT licensed, reproduced here so the notices are complete.
+
+- Pinned commit: `3465659888b2270addac9de0b2a728f59a00360c`
+
+```
+MIT License
 
 Copyright (c) 2026 CameraUnlock
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ---
 
 ## OpenTrack
 
-- **Version:** protocol only, no code used
-- **License:** ISC
-- **Upstream:** https://github.com/opentrack/opentrack
-- **Usage:** We consume the OpenTrack UDP pose protocol; no OpenTrack code is
-  compiled in or shipped.
-- **Bundled:** no.
+Not bundled and not linked. This mod implements the OpenTrack UDP pose datagram
+layout so that OpenTrack (https://github.com/opentrack/opentrack, ISC licence)
+and compatible trackers can drive it. No OpenTrack code, headers or binaries
+are copied, linked or redistributed, so its licence triggers no notice
+obligation here. It is credited because the wire format is its work.
 
 ---
 
-## Game
+## Alien: Isolation
 
-Alien: Isolation was developed by Creative Assembly and published by SEGA. The
-Alien franchise and its related marks are the property of 20th Century Studios.
-This mod is an unofficial, fan-made add-on and is not affiliated with or endorsed
-by any of them. Those names appear here only to identify the game this mod is
-compatible with.
-
-No game code, assets, media, or binaries are included in this repository or in
-its releases. The mod hooks the game in memory at runtime and requires a
-legitimately purchased copy to be of any use.
+Alien: Isolation and all related names, logos, characters and marks are
+trademarks of their respective owners. They are used here only to identify the
+game this mod applies to, which is nominative use and not a claim of any right
+in them. This project is an unofficial, fan-made modification. It is not
+affiliated with, endorsed by, or sponsored by the game's developers, its
+publishers, its engine vendor, or any other rights holder. It redistributes no
+game code, no game assets and no proprietary DLLs, and it requires a
+legitimately purchased copy of the game. Any engine structure offsets,
+function addresses and internal identifier names referenced in the source were
+derived by the authors through independent analysis of a legitimately owned
+copy. They are recorded as numbers, and as the short names the mod matches on
+at runtime to find the right function or overlay. No decompiled or disassembled
+game code, and no part of the game's own source, is stored in this repository.
