@@ -6,14 +6,15 @@ licence. Where a licence requires the copyright notice, the conditions and the
 disclaimer to accompany a binary distribution, the full text is reproduced here
 verbatim, and this file ships at the root of every release ZIP we publish.
 
-Nothing in this repository is derived from, or redistributes any part of,
-Alien: Isolation.
+This repository contains no game code, no extracted assets and no data files
+from Alien: Isolation. It does carry one short clip of captured gameplay footage,
+described under "Alien: Isolation" below.
 
 | Component | Version | Licence | How it ships |
 |-----------|---------|---------|--------------|
 | Ultimate ASI Loader | v9.7.2 | MIT | Bundled verbatim in the installer ZIP |
-| MinHook | `d94c64d32ea3` | BSD-2-Clause | Compiled into `AlienIsolationHeadTracking.asi` |
-| cameraunlock-core | 3465659888b2270addac9de0b2a728f59a00360c | MIT | Compiled into `AlienIsolationHeadTracking.asi` |
+| MinHook | `d94c64d32ea3` | BSD-2-Clause | Compiled into `dinput8.dll` |
+| cameraunlock-core | 3465659888b2270addac9de0b2a728f59a00360c | MIT | Compiled into `dinput8.dll` |
 | OpenTrack | n/a | ISC | Not bundled; UDP protocol interoperability only |
 
 ---
@@ -57,7 +58,7 @@ SOFTWARE.
 
 ## MinHook
 
-Fetched from upstream at configure time and compiled into `AlienIsolationHeadTracking.asi`.
+Fetched from upstream at configure time and compiled into `dinput8.dll`.
 
 - Upstream: https://github.com/TsudaKageyu/minhook
 - Commit: `d94c64d32ea37bc4f5ee47d580709f70c6fb6080`
@@ -154,7 +155,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## cameraunlock-core
 
-Git submodule at `cameraunlock-core/`, compiled into `AlienIsolationHeadTracking.asi`. Our own code,
+Git submodule at `cameraunlock-core/`, compiled into `dinput8.dll`. Our own code,
 MIT licensed, reproduced here so the notices are complete.
 
 - Pinned commit: `3465659888b2270addac9de0b2a728f59a00360c`
@@ -203,10 +204,27 @@ game this mod applies to, which is nominative use and not a claim of any right
 in them. This project is an unofficial, fan-made modification. It is not
 affiliated with, endorsed by, or sponsored by the game's developers, its
 publishers, its engine vendor, or any other rights holder. It redistributes no
-game code, no game assets and no proprietary DLLs, and it requires a
-legitimately purchased copy of the game. Any engine structure offsets,
+game code, no extracted assets, no data files and no proprietary DLLs, and it
+requires a legitimately purchased copy of the game.
+
+`assets/readme-clip.gif` is roughly ten seconds of ordinary gameplay, captured
+by the authors from a legitimately owned copy and embedded at the top of
+`README.md`. It is the game's own audiovisual work and its copyright rests with
+Creative Assembly and SEGA; the MIT licence covering this project does not
+extend to it. It is present so a reader can see what the mod does, which is how
+a mod page normally presents itself. It lives in the repository only: the
+packaging script copies `README.md`, `LICENSE`, `CHANGELOG.md` and this file,
+never `assets/`, so the clip ships in neither the installer ZIP nor the Nexus
+ZIP. The README references it by absolute URL so the image still resolves for
+someone reading the copy inside a ZIP. We will take it down on request from a
+rights holder. Any engine structure offsets,
 function addresses and internal identifier names referenced in the source were
 derived by the authors through independent analysis of a legitimately owned
 copy. They are recorded as numbers, and as the short names the mod matches on
-at runtime to find the right function or overlay. No decompiled or disassembled
-game code, and no part of the game's own source, is stored in this repository.
+at runtime to find the right function or overlay. No decompiled or
+disassembled game code, and no part of the game's own source, is stored in
+this repository. Any engine structure offsets, function addresses or byte
+patterns referenced in the source were derived by the authors through
+independent analysis of a legitimately owned copy. They are factual
+measurements recorded as numbers; no decompiled or disassembled game code is
+stored in this repository.
