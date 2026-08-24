@@ -63,6 +63,10 @@ struct Candidate {
 Candidate g_candidates[kMaxCandidates];
 int g_candidateCount = 0;
 
+// One listing per buffer we could plausibly settle on, plus the moves a full
+// round of rejections makes, is every listing that says something new.
+constexpr int kMaxCandidateListings = 8;
+
 // Depth buffers that were probed and came back with no geometry in them. A
 // frame binds more than one full-frame depth target and only one is the
 // scene's; which is which is not knowable from the binds alone, so the ones
@@ -246,10 +250,16 @@ ID3D11Texture2D* ClaimFrameDepth() {
         if (best < 0 || g_candidates[i].binds > g_candidates[best].binds) best = i;
 
     // Listed again whenever the choice changes, which is how a rejection shows
-    // up in the log as a move to a named buffer rather than as silence.
+    // up in the log as a move to a named buffer rather than as silence. Capped
+    // because two buffers bound the same number of times swap the lead from one
+    // frame to the next, and each swap is a line per candidate: uncapped, that
+    // writes the whole table at frame rate for as long as the tie lasts.
     static ID3D11Texture2D* lastChoice = nullptr;
-    if (best >= 0 && g_candidates[best].tex != lastChoice) {
+    static int listings = 0;
+    if (best >= 0 && g_candidates[best].tex != lastChoice && listings < kMaxCandidateListings) {
         lastChoice = g_candidates[best].tex;
+        if (++listings == kMaxCandidateListings)
+            logging::Line("depth: further changes of chosen buffer are not listed");
         for (int i = 0; i < g_candidateCount; ++i) {
             D3D11_TEXTURE2D_DESC d = {};
             g_candidates[i].tex->GetDesc(&d);

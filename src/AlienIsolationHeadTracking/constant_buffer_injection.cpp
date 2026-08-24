@@ -213,16 +213,17 @@ int CollectHits(const float* cb, int nf, BufferScan& scan, const float* refV, in
     return hitCount;
 }
 
-void ReportBuffer(const float* cb, UINT size, int nf, const Hit* hits, int hitCount, int vOff) {
+// What was claimed in a buffer, once per distinct shape. The raw float rows this
+// used to dump alongside were how the layouts in .lab/NOTES.md were worked out;
+// they are written down there now, and a buffer's worth of them per shape is a
+// few hundred lines nobody reads in a log sent with a bug report.
+void ReportBuffer(UINT size, const Hit* hits, int hitCount, int vOff) {
     const uint32_t signature = static_cast<uint32_t>(hitCount) | (vOff >= 0 ? 0x80000000u : 0u);
     if (AlreadyReported(size, signature)) return;
     logging::Line("=== camera CB sz=%u ===", size);
     for (int h = 0; h < hitCount; ++h)
         logging::Line("  %s @ +0x%03X", IsInverseHit(hits[h].kind) ? "inverse" : "forward",
                       hits[h].off * 4);
-    for (int k = 0; k + kFloatsPerRow <= nf; k += kFloatsPerRow)
-        logging::Line("  +0x%03X: % .4f % .4f % .4f % .4f", k * 4, cb[k], cb[k + 1], cb[k + 2],
-                      cb[k + 3]);
 }
 
 // One view for the whole buffer, recovered from this buffer's own matrices.
@@ -307,7 +308,7 @@ void InjectIntoCB(float* cb, UINT size) {
     const int hitCount = CollectHits(cb, nf, scan, state.ReferenceView(), vOff, hits, aimOff);
     if (hitCount == 0) return;
 
-    ReportBuffer(cb, size, nf, hits, hitCount, vOff);
+    ReportBuffer(size, hits, hitCount, vOff);
 
     float upCam[3];
     WorldUpInCameraSpace(state.ReferenceView(), upCam);

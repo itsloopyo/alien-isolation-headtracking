@@ -152,12 +152,12 @@ tracking should do behind your back.
 **Mod not loading**
 - Confirm `xinput1_3.dll` and `AlienIsolationHeadTracking.asi` are both next to `AI.exe`.
 - Launch through Steam, not by running `AI.exe` directly.
-- Look for `AlienIsolationHeadTracking.log` next to `AI.exe`. If it is missing, the loader did not pick up the `.asi`.
+- Look for `HeadTracking.log` next to `AI.exe`. If it is missing, the loader did not pick up the `.asi`.
 
 **No tracking response**
 - Make sure OpenTrack is running and Started, with output set to UDP on `127.0.0.1:4242`.
 - Check that port `4242` is not blocked by your firewall.
-- Open `AlienIsolationHeadTracking.log` and read the lines about the UDP connection and incoming poses. The log starts fresh every launch; the previous run is kept as `AlienIsolationHeadTracking.prev.log`, which is the one to send after a crash.
+- Open `HeadTracking.log` and read the lines about the UDP connection and the pose sample it writes about once a minute of play. The log starts fresh every launch; the previous run is kept as `HeadTracking.prev.log`, which is the one to send after a crash.
 - If another tracker or modded game already holds port `4242`, close it. The mod retries automatically.
 
 **Jittery or unstable tracking**

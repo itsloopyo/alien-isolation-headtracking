@@ -15,7 +15,7 @@ if (-not $GamePath) {
 }
 if (-not $GamePath) { throw "Could not locate Alien: Isolation." }
 
-$log = Join-Path $GamePath 'AlienIsolationHeadTracking.log'
+$log = Join-Path $GamePath 'HeadTracking.log'
 if (Test-Path $log) { Remove-Item $log -Force }
 
 Write-Host "Launching Alien: Isolation via Steam..." -ForegroundColor Cyan

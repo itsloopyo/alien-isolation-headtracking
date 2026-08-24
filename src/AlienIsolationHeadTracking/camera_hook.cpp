@@ -64,8 +64,10 @@ constexpr float kWidenedFrustum = 0.6f;
 constexpr float kReticleRadius = 3.0f;
 constexpr unsigned kReticleColour = 0xC0B0B0B0u;
 
-// How often the diagnostics report, in presented frames.
-constexpr int kPoseLogInterval = 600;
+// How often the live pose is reported, in seconds of gameplay. Long enough that
+// an hour of play adds a page rather than a thousand lines, often enough that a
+// log sent with a bug report shows whether the head was moving.
+constexpr float kPoseLogIntervalSeconds = 60.0f;
 
 // Time constant of the aim-distance smoothing. The distance JUMPS whenever the
 // aim crosses the edge of anything - a doorway, a railing, a console - and an
@@ -212,9 +214,11 @@ void DrawReticle(rendering::DX11DrawContext& dc, bool aimValid, float ndcX, floa
 // something while the constant-buffer path was being developed, and one of them
 // reads as zero in normal play now that the game-camera path is the default,
 // which looks like a fault in a log someone sends us.
-void ReportProgress() {
-    static int frame = 0;
-    if ((++frame % kPoseLogInterval) != 0) return;
+void ReportProgress(float dt) {
+    static float elapsed = kPoseLogIntervalSeconds;  // report the first tracked frame
+    elapsed += dt;
+    if (elapsed < kPoseLogIntervalSeconds) return;
+    elapsed = 0.0f;
     const camera::HeadPose pose = camera::State().CurrentPose();
     logging::Line("camera: yaw=%.2f pitch=%.2f roll=%.2f off=(%.3f %.3f %.3f) aim=%.2fm "
                   "depth=%.6f reads=%d", pose.yaw, pose.pitch, pose.roll, pose.offset[0],
@@ -278,7 +282,7 @@ void OnRender(rendering::DX11DrawContext& dc) {
     // frame projects with, so it is read at the point the aim was just drawn.
     UpdateAimDistance(dc, state, aimValid, dt);
 
-    ReportProgress();
+    ReportProgress(dt);
 }
 
 }  // namespace

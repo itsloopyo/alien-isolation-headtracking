@@ -218,14 +218,14 @@ if (-not $NoLaunch) {
     Get-Process -Name 'AI' -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Seconds 2
     $game = 'C:\Program Files (x86)\Steam\steamapps\common\Alien Isolation'
-    Remove-Item (Join-Path $game 'AlienIsolationHeadTracking.log') -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $game 'HeadTracking.log') -Force -ErrorAction SilentlyContinue
     Get-ChildItem $ShotDir -Filter *.png -ErrorAction SilentlyContinue | Remove-Item -Force
     Start-Process "steam://run/214490"
     Start-Sleep -Seconds $WarmupSeconds
 }
 
 if ($ToGame) {
-    $log = 'C:\Program Files (x86)\Steam\steamapps\common\Alien Isolation\AlienIsolationHeadTracking.log'
+    $log = 'C:\Program Files (x86)\Steam\steamapps\common\Alien Isolation\HeadTracking.log'
     $deadline = (Get-Date).AddSeconds(120)
     while ((Get-Date) -lt $deadline -and (Get-GameWindow) -eq [IntPtr]::Zero) { Start-Sleep -Seconds 2 }
 

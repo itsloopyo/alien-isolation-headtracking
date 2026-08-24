@@ -74,8 +74,6 @@ Baseline& BaselineFor(void* player, int slot, int left, int top) {
     return base;
 }
 
-int g_lastOverlayCount = -1;
-
 void* ReadPtr(const void* p, uintptr_t off) {
     return *reinterpret_cast<void* const*>(reinterpret_cast<const char*>(p) + off);
 }
@@ -126,22 +124,10 @@ void Update(float ndcX, float ndcY, bool valid) {
         const unsigned total =
             *reinterpret_cast<unsigned*>(static_cast<char*>(mgr) + ui.manager_overlay_count);
         if (arr && total <= kMaxOverlays) {
-            // Capped for the session. The count is re-read live, so a HUD element
-            // that flickers on alternating frames (motion tracker, interaction
-            // prompt) makes this true every frame, and the listing below is one
-            // line per overlay - up to kMaxOverlays in a single frame, written
-            // while holding the engine's lock. The names are a one-time discovery
-            // aid, so a bounded sample is all they were ever worth.
-            static int s_overlayAnnouncements = 0;
-            constexpr int kMaxOverlayAnnouncements = 8;
-            const bool announce = static_cast<int>(total) != g_lastOverlayCount &&
-                                  s_overlayAnnouncements < kMaxOverlayAnnouncements;
-            if (announce) ++s_overlayAnnouncements;
             for (unsigned i = 0; i < total; ++i) {
                 void* o = arr[i];
                 if (!o) continue;
                 const char* n = static_cast<const char*>(ReadPtr(o, ui.overlay_name));
-                if (announce) logging::Line("hud: overlay '%s'", n ? n : "(null)");
                 if (!n || !IsCentredOverlay(n)) continue;
                 int slot = 0;
                 while (strcmp(n, kCentredOverlays[slot]) != 0) ++slot;
@@ -162,7 +148,6 @@ void Update(float ndcX, float ndcY, bool valid) {
                 Field(player, ui.viewport_left) = base.left + static_cast<int>(ndcX * halfW);
                 Field(player, ui.viewport_top) = base.top - static_cast<int>(ndcY * halfH);
             }
-            g_lastOverlayCount = static_cast<int>(total);
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }

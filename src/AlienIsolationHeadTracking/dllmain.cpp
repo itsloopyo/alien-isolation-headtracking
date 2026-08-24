@@ -38,6 +38,10 @@ constexpr int kChordYawMode = 'H';
 constexpr int kChordFrustum = 'U';
 constexpr int kChordInjectMode = 'J';
 
+// How long a launch goes without a single tracker packet before the log says so.
+// Past the point where a tracker started alongside the game would have sent one.
+constexpr int kNoTrackerReportSeconds = 30;
+
 void DoToggleTracking() {
     bool on = !g_trackingEnabled.load();
     g_trackingEnabled.store(on);
@@ -146,28 +150,13 @@ std::wstring ExeDirFileW(const wchar_t* name) {
 }
 
 void InitThread() {
-    const std::wstring logPath = ExeDirFileW(L"AlienIsolationHeadTracking.log");
-    // The crash handler installed below writes its report into this log, and the
-    // relaunch the player makes to go and read it is what would destroy it. One
-    // previous generation survives that relaunch; anything older is history
-    // nobody asked for.
-    // Named, not a temporary in the call: a temporary's destructor runs at the
-    // end of the full-expression, and the deallocation can overwrite the
-    // thread's last-error value before it is read.
-    const std::wstring prevPath = ExeDirFileW(L"AlienIsolationHeadTracking.prev.log");
-    const BOOL rotated = MoveFileExW(
-        logPath.c_str(), prevPath.c_str(), MOVEFILE_REPLACE_EXISTING);
-    const DWORD rotateError = rotated ? 0 : GetLastError();
-    logging::Open(logPath);
+    // Open() truncates this launch's log and files the outgoing one away as
+    // HeadTracking.prev.log, so the log is this session's alone and two
+    // generations are all that ever accumulate next to the EXE. The previous
+    // generation is kept because the crash handler writes its report here and
+    // the relaunch the player makes to go and read it would otherwise destroy it.
+    logging::Open(ExeDirFileW(L"HeadTracking.log"));
     logging::Line("=== %s v%s ===", AIHT_NAME, AIHT_VERSION);
-    // A .prev.log another process holds open cannot be replaced, and the Open
-    // above has just truncated the generation that would have gone into it.
-    if (!rotated && rotateError != ERROR_FILE_NOT_FOUND) {
-        logging::Line("WARNING: could not rotate the previous log into "
-                      "AlienIsolationHeadTracking.prev.log (error %lu); the previous "
-                      "run's log is gone. Close anything holding the .prev.log open.",
-                      rotateError);
-    }
     diagnostics::InstallCrashHandler();
 
     memory::PeFingerprint fp{};
@@ -213,22 +202,27 @@ void InitThread() {
     camera::Install(g_receiver);
 #endif
 
-    // Heartbeat loop: prove the plugin is alive and report tracker state.
+    // Tracker state, on change only. The live pose is reported from the render
+    // side, which knows whether the camera is being driven with it; a second
+    // periodic pose line here said the same thing twice and was half the log.
     bool wasReceiving = false;
-    int tick = 0;
+    bool everReceived = false;
+    int seconds = 0;
     for (;;) {
         Sleep(1000);
-        bool receiving = g_receiver.IsReceiving();
-        if (receiving != wasReceiving) {
-            logging::Line("Tracker %s%s", receiving ? "CONNECTED" : "lost",
-                          (receiving && g_receiver.IsRemoteConnection()) ? " (remote)" : "");
-            wasReceiving = receiving;
+        const bool receiving = g_receiver.IsReceiving();
+        everReceived = everReceived || receiving;
+        // Said outright, because the reason a log has no tracking in it is
+        // usually that nothing ever arrived, and that reads as silence.
+        if (!everReceived && ++seconds == kNoTrackerReportSeconds) {
+            logging::Line("No tracker packets on UDP %u yet. Start OpenTrack (or the phone app) "
+                          "and point its output at this machine on that port.",
+                          UdpReceiver::kDefaultPort);
         }
-        if (receiving && (++tick % 5) == 0) {
-            float y = 0, p = 0, r = 0;
-            g_receiver.GetRotation(y, p, r);
-            logging::Line("pose yaw=%.2f pitch=%.2f roll=%.2f", y, p, r);
-        }
+        if (receiving == wasReceiving) continue;
+        wasReceiving = receiving;
+        logging::Line("Tracker %s%s", receiving ? "CONNECTED" : "lost",
+                      (receiving && g_receiver.IsRemoteConnection()) ? " (remote)" : "");
     }
 }
 
