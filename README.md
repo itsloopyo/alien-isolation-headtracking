@@ -1,3 +1,9 @@
+# Alien: Isolation Head Tracking
+
+![Alien: Isolation running with this mod](https://raw.githubusercontent.com/itsloopyo/alien-isolation-headtracking/main/assets/readme-clip.gif)
+
+An unofficial head tracking mod for Alien: Isolation that moves the view with your head while your mouse or controller keeps aiming, driven by a webcam, phone, or any OpenTrack compatible tracker, with no VR headset required.
+
 > [!CAUTION]
 > ## Not exhaustively tested - expect rough edges
 >
@@ -6,12 +12,6 @@
 > in situations it has not been put through yet.
 >
 > Please report anything you hit on the [issues page](https://github.com/itsloopyo/alien-isolation-headtracking/issues).
-
-# Alien: Isolation Head Tracking
-
-![Mod GIF](https://raw.githubusercontent.com/itsloopyo/alien-isolation-headtracking/main/assets/readme-clip.gif)
-
-6DOF head tracking for Alien: Isolation that moves the in-game camera with your head while your mouse or controller keeps aiming, driven by OpenTrack over UDP, with no VR headset required.
 
 ## Features
 
