@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cameraunlock/math/smoothing_utils.h"
+
 namespace config {
 
 // Settings read from AlienIsolationHeadTracking.ini beside AI.exe.
@@ -28,8 +30,8 @@ struct Settings {
     // tracker running on this machine (loopback) uses local_smoothing, a phone
     // or other device on the network uses remote_smoothing. Both cover rotation
     // and position. 0 = none, 1 = heavy.
-    float local_smoothing = 0.0f;
-    float remote_smoothing = 0.15f;
+    float local_smoothing = static_cast<float>(cameraunlock::math::kDefaultLocalSmoothing);
+    float remote_smoothing = static_cast<float>(cameraunlock::math::kDefaultRemoteSmoothing);
 };
 
 // Reads the INI on first call, writing a commented default file when none is
