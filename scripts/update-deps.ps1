@@ -1,13 +1,20 @@
 #!/usr/bin/env pwsh
 #Requires -Version 5.1
 # Bump vendored Ultimate ASI Loader (dinput8.dll) to the latest upstream
-# within the pinned range and rewrite vendor/ultimate-asi-loader/{LICENSE,README.md}.
+# within the pinned range, strip the third-party DLLs it carries as resources,
+# and rewrite vendor/ultimate-asi-loader/{LICENSE,README.md}.
 # Manual: dev runs this when they want a fresh upstream bump, then commits the
 # result. CI never refreshes.
 #
 # Special case: Ultimate-ASI-Loader ships a DLL inside a release zip, not as a
 # standalone asset. We extract dinput8.dll and vendor it directly so install.cmd
 # can copy it straight into the game directory under the proxy name it needs.
+#
+# The extracted DLL is NOT vendored as it comes: the x86 build embeds binkw32.dll
+# (RAD Game Tools, proprietary), wndmode.dll (VEG / menopem, no licence) and
+# vorbisfile.dll (Xiph.Org) as RCDATA resources, and every release ZIP we publish
+# would redistribute all three. strip-loader-payload.ps1 zeroes them before the
+# copy is hashed and committed. Never skip that step.
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -60,6 +67,13 @@ try {
         Invoke-WebRequest -Uri $licenseUrl -OutFile (Join-Path $vendorAsiDir 'LICENSE') -UseBasicParsing -TimeoutSec 30 -Headers @{ "User-Agent" = "CameraUnlock-HeadTracking" }
     }
 
+    $upstreamSha = (Get-FileHash -Path $vendorAsiDll -Algorithm SHA256).Hash.ToLower()
+
+    Write-Host "Stripping the loader's embedded third-party DLLs..." -ForegroundColor Cyan
+    $strip = Join-Path $scriptDir 'strip-loader-payload.ps1'
+    & $strip -Path $vendorAsiDll
+    & $strip -Path $vendorAsiDll -VerifyOnly   # throws if anything survived
+
     $dllSha = (Get-FileHash -Path $vendorAsiDll -Algorithm SHA256).Hash.ToLower()
     $readme = @(
         '# Ultimate ASI Loader (vendored)',
@@ -73,12 +87,33 @@ try {
         "- Tag: ``$($meta.Tag)``",
         "- Commit: ``$($meta.CommitSha)``",
         "- Asset: ``$($meta.AssetName)``",
-        "- dinput8.dll SHA-256: ``$dllSha``",
+        "- Upstream dinput8.dll SHA-256: ``$upstreamSha``",
+        "- Vendored dinput8.dll SHA-256: ``$dllSha`` (after the strip below)",
         "- Fetched at: $($meta.FetchedAt)",
         '',
-        '`dinput8.dll` is extracted from the upstream x86 zip untouched. install.cmd copies it',
-        "into the Alien: Isolation game directory as xinput1_3.dll (the proxy slot AI.exe",
-        'loads ASI plugins through).'
+        '`dinput8.dll` is extracted from the upstream x86 zip. install.cmd copies it into the',
+        'Alien: Isolation game directory as `xinput1_3.dll` (the proxy slot AI.exe loads ASI',
+        'plugins through).',
+        '',
+        '## Modified: third-party payload stripped',
+        '',
+        'The upstream x86 loader carries three complete third-party DLLs as RCDATA resources,',
+        'so that a user who renames it over one of those libraries still gets the original',
+        'exports, plus the ini template one of them reads:',
+        '',
+        '- `binkw32.dll` - RAD Game Tools, Inc., Bink and Smacker 1.994i. Proprietary',
+        '  middleware licensed per title; we have no right to redistribute it.',
+        '- `wndmode.dll` - DirectX Windower Embedded v2.3, (C) 2008 VEG, (C) 2004 menopem.',
+        '  No licence accompanies it.',
+        '- `vorbisfile.dll` - Xiph.Org, BSD-3-Clause. Redistributable only with its notice.',
+        '',
+        '`scripts/strip-loader-payload.ps1` zeroes all three, and the windower ini template,',
+        'before the file is hashed and committed. Only the `.rsrc` section changes; every other',
+        'byte, and the file size, is identical to the upstream asset. Nothing in this mod can',
+        "reach the stripped resources - the two library payloads are keyed off the loader's own",
+        'filename, and we deploy it as `xinput1_3.dll`, while the windower needs a `wndmode.ini`',
+        'we never ship. MIT permits the modification; it is recorded here and in',
+        'THIRD-PARTY-NOTICES.md so this copy is not mistaken for stock upstream.'
     ) -join "`n"
     Set-Content -Path (Join-Path $vendorAsiDir 'README.md') -Value $readme -Encoding UTF8
 

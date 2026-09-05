@@ -15,6 +15,22 @@ All notable changes to this project are documented here. Format based on
   `DX11Overlay`), rendering on the game's backbuffer.
 
 ### Changed
+- Stripped the third-party DLLs Ultimate ASI Loader carries as resources out of
+  the vendored copy. The upstream 32-bit build embeds `binkw32.dll` (RAD Game
+  Tools' Bink and Smacker 1.994i, proprietary middleware licensed per title),
+  `wndmode.dll` (DirectX Windower Embedded, (C) 2008 VEG and (C) 2004 menopem,
+  no licence) and `vorbisfile.dll` (Xiph.Org, BSD-3-Clause) so that a user who
+  renames the loader over one of those libraries still gets the original
+  exports. The installer ZIP ships that binary, so it was redistributing all
+  three. `scripts/strip-loader-payload.ps1` now zeroes them,
+  `pixi run update-deps` runs it on every refresh, and `pixi run package`
+  refuses to build a ZIP from a loader that still has them. Only the `.rsrc`
+  section changes; every other byte of the file, and its size, are unchanged,
+  and nothing in this mod could reach the stripped resources anyway.
+- Corrected `THIRD-PARTY-NOTICES.md`: the reproduced cameraunlock-core licence
+  named CameraUnlock as the copyright holder where the licence shipped with the
+  pinned submodule names itsloopyo, and the recorded core commit had drifted
+  from the one the submodule points at.
 - Removed recentring from the mod: the `Home` hotkey, the `Ctrl+Shift+T` chord
   and the handler behind them are gone. Every tracker app centres itself, so a
   mod-side centre was a second centre in series with the tracker's and the two

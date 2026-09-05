@@ -24,5 +24,9 @@ launch-test = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/launc
 clean = "powershell -NoProfile -Command \"if (Test-Path build) { Remove-Item -Recurse -Force build }; if (Test-Path release) { Remove-Item -Recurse -Force release }\""
 # Manual dev action with a commit attached - deliberately depended on by nothing.
 update-deps = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/update-deps.ps1"
+# Strip the third-party DLLs the upstream x86 loader embeds as resources
+# (binkw32.dll, wndmode.dll, vorbisfile.dll). update-deps runs this already;
+# the task exists for a loader copied in by hand.
+strip-loader = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/strip-loader-payload.ps1 -Path vendor/ultimate-asi-loader/dinput8.dll"
 package = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["test"] }
 release = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1"

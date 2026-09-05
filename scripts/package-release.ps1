@@ -43,6 +43,12 @@ if (-not (Test-Path (Join-Path $vendorAsiDir 'dinput8.dll'))) {
     throw "Bundled ASI loader missing: $vendorAsiDir\dinput8.dll. Run 'pixi run update-deps' first."
 }
 
+# The installer ZIP redistributes that binary, and the upstream x86 loader carries
+# binkw32.dll (RAD Game Tools, proprietary), wndmode.dll and vorbisfile.dll as
+# RCDATA resources. None of the three is ours to ship, so a loader that still
+# has them never reaches a release. See vendor/ultimate-asi-loader/README.md.
+& (Join-Path $scriptDir 'strip-loader-payload.ps1') -Path (Join-Path $vendorAsiDir 'dinput8.dll') -VerifyOnly
+
 foreach ($s in @('install.cmd', 'uninstall.cmd')) {
     if (-not (Test-Path (Join-Path $scriptDir $s))) { throw "Required script not found: $s" }
 }
