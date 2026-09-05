@@ -17,8 +17,8 @@ described under "Alien: Isolation" below.
 | miniz | 3.0.0 (inside Ultimate ASI Loader v9.7.2) | MIT | Compiled into the vendored dinput8.dll |
 | MemoryModule | `5f83e41` (inside Ultimate ASI Loader v9.7.2) | MPL-2.0 | Compiled into the vendored dinput8.dll |
 | d3d8to9 | `65870f2` (inside Ultimate ASI Loader v9.7.2) | BSD-2-Clause | Compiled into the vendored dinput8.dll |
-| MinHook | `d94c64d32ea3` | BSD-2-Clause | Compiled into `dinput8.dll` |
-| cameraunlock-core | 29b11b62f183183295d435b7292d8c1c0a8e5cff | MIT | Compiled into `dinput8.dll` |
+| MinHook | `d94c64d32ea3` | BSD-2-Clause | Compiled into `AlienIsolationHeadTracking.asi` |
+| cameraunlock-core | 29b11b62f183183295d435b7292d8c1c0a8e5cff | MIT | Compiled into `AlienIsolationHeadTracking.asi` |
 | OpenTrack | n/a | ISC | Not bundled; UDP protocol interoperability only |
 
 ---
@@ -622,7 +622,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ## MinHook
 
-Fetched from upstream at configure time and compiled into `dinput8.dll`.
+Fetched from upstream at configure time and compiled into `AlienIsolationHeadTracking.asi`.
 
 - Upstream: https://github.com/TsudaKageyu/minhook
 - Commit: `d94c64d32ea37bc4f5ee47d580709f70c6fb6080`
@@ -719,7 +719,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## cameraunlock-core
 
-Git submodule at `cameraunlock-core/`, compiled into `dinput8.dll`. Our own code,
+Git submodule at `cameraunlock-core/`, compiled into `AlienIsolationHeadTracking.asi`. Our own code,
 MIT licensed, reproduced here so the notices are complete.
 
 - Pinned commit: `29b11b62f183183295d435b7292d8c1c0a8e5cff`
