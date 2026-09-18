@@ -11,6 +11,7 @@ cmake = ">=3.20"
 ninja = "*"
 
 [tasks]
+update-submodule = "git submodule update --remote cameraunlock-core && powershell -NoProfile -ExecutionPolicy Bypass -File cameraunlock-core/scripts/update-submodule.ps1"
 sync = "git submodule update --remote cameraunlock-core"
 configure = "cmake -S . -B build -A Win32 -DAIHT_BUILD_CAMERA=ON"
 build = { cmd = "cmake --build build --config Release", depends-on = ["configure"] }
