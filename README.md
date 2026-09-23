@@ -17,6 +17,7 @@ An unofficial head tracking mod for Alien: Isolation that moves the view with yo
 
 - **Decoupled look and aim** - head tracking moves the camera; aim stays on your mouse/controller
 - **6DOF positional tracking** - lean and peek with head position
+- **Works with any OpenTrack compatible tracker** - free options available for PC, iOS and Android
 - **Aim-locked reticle and use prompts** - our reticle and the "E USE" prompt sit where the gun actually points
 
 ## Requirements
@@ -26,6 +27,13 @@ An unofficial head tracking mod for Alien: Isolation that moves the view with yo
 - Windows 10 or 11. The game is 32-bit, so the mod ships as a 32-bit `.asi`.
 
 ## Installation
+
+### Lopari
+
+Download [Lopari](https://lopari.app), choose **Alien: Isolation**, and click
+**Play with head tracking**.
+
+### Standalone Installer
 
 1. Download the installer ZIP from the [Releases page](https://github.com/itsloopyo/alien-isolation-headtracking/releases).
 2. Extract it anywhere.
