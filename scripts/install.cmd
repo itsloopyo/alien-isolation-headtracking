@@ -23,6 +23,10 @@ set "ASI_LOADER_NAME=xinput1_3.dll"
 :: the unconditional copy and resets every key on every update.
 set "MOD_SEED_FILES="
 set "MOD_CONTROLS=Controls: End=toggle  PageUp=tracking-mode  PageDown=yaw-mode  Insert=frustum-widen  Delete=injection-mode  (chords: Ctrl+Shift+Y/G/H/U/J)"
+:: Not used by this mod. Set blank so a value another mod's wrapper left in
+:: the same console does not reach the body.
+set "ASI_SUBDIR="
+set "ASI_LOADER_VERSION="
 :: --- END CONFIG BLOCK ---
 
 :: Pin delayed expansion off before `%*` is expanded on the `call` below.
