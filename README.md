@@ -132,6 +132,8 @@ Two equivalent binding sets - use whichever your keyboard has:
 | Toggle frustum widening   | `Insert`    | `Ctrl+Shift+U` |
 | Cycle injection mode      | `Delete`    | `Ctrl+Shift+J` |
 
+Each action's keys are a list under `[Hotkeys]` in `CameraUnlock.ini`, so you can rebind or remove any of them.
+
 `Page Up` / `Ctrl+Shift+G` cycles tracking mode:
 
 1. Normal head-tracked gameplay
@@ -139,42 +141,128 @@ Two equivalent binding sets - use whichever your keyboard has:
 3. Rotational tracking disabled, positional tracking enabled
 4. Back to normal
 
-`Page Down` / `Ctrl+Shift+H` switches yaw between horizon-locked (the default, head yaw turns about the world's up axis however the camera is pitched) and camera-local (head yaw turns about the camera's own up axis, which leans the view at steep pitches). The switch takes effect immediately and lasts for the session; the mod starts in whatever the INI says.
+The mode you pick is saved to `CameraUnlock.ini` and used at the next start. `End` changes the current session only: at startup tracking is on or off as `EnableOnStartup` says.
+
+`Page Down` / `Ctrl+Shift+H` switches yaw between horizon-locked (the default, head yaw turns about the world's up axis however the camera is pitched) and camera-local (head yaw turns about the camera's own up axis, which leans the view at steep pitches). The switch takes effect immediately and is saved to `CameraUnlock.ini`, so the next start uses it too.
 
 ## Configuration
 
-The config file is generated on first run next to `AI.exe` at `AlienIsolationHeadTracking.ini`.
+Apart from creating `CameraUnlock.ini` at startup when there is none, the mod writes to it only when a hotkey changes the tracking mode or the yaw mode. It never writes `AlienIsolationHeadTracking.ini`, and it creates `Defaults.ini` only when there is none and never changes it. Edit `CameraUnlock.ini` with the game closed.
+
+<!-- cameraunlock:config -->
+The mod reads its settings from `CameraUnlock.ini` in the game folder, and creates the file when it starts and finds none. Edit it with any text editor.
+
+A setting set to `default` takes its value from `Defaults.ini`, which every head tracking mod that keeps its settings in `CameraUnlock.ini` reads. Head tracking mods that keep their settings in another file do not read it. Writing a value in place of `default` changes that setting for this game only. When the mod saves a setting that a hotkey changed in game, it writes the new value in place of `default`, so that setting no longer follows `Defaults.ini` in this game until you set it to `default` again.
+
+`Defaults.ini` is `%AppData%\CameraUnlock\Defaults.ini` on Windows; `$XDG_CONFIG_HOME/CameraUnlock/Defaults.ini` on Linux, or `~/.config/CameraUnlock/Defaults.ini` where `XDG_CONFIG_HOME` is not set, under Wine and Proton too; and `~/Library/Application Support/CameraUnlock/Defaults.ini` on macOS. The mod's log, where it writes one, names the file it read.
+
+When the mod starts and finds no `Defaults.ini`, it creates one holding the built-in values, unless Windows runs the game as a packaged app. The mod never changes `Defaults.ini` after that. Edit it with any text editor.
+
+The built-in value of each setting set to `default` below:
+
+- `UdpPort=4242`
+- `EnableOnStartup=true`
+- `WorldSpaceYaw=true`
+- `RotationEnabled=true`
+- `LocalSmoothing=0.0`
+- `RemoteSmoothing=0.15`
+- `PositionEnabled=true`
+- `PositionLimitX=0.3`
+- `PositionLimitY=0.2`
+- `PositionLimitYDown=0.2`
+- `PositionLimitZ=0.4`
+- `PositionLimitZBack=0.1`
+- `ToggleKey=End, Ctrl+Shift+Y`
+- `CycleTrackingModeKey=PageUp, Ctrl+Shift+G`
+- `YawModeKey=PageDown, Ctrl+Shift+H`
+
+With every setting at its default, the file reads:
 
 ```ini
+; Alien: Isolation head tracking settings.
+; Comments start with ; and go on their own line. Text after a value is part of the value.
+; Hotkeys are key names such as End, PageUp or Ctrl+Shift+Y. Separate several with commas; leave empty for none.
+; A setting set to default takes its value from Defaults.ini, which every head tracking mod
+; that keeps its settings in CameraUnlock.ini reads: %AppData%\CameraUnlock\Defaults.ini on
+; Windows, $XDG_CONFIG_HOME/CameraUnlock/Defaults.ini (normally ~/.config/CameraUnlock) on
+; Linux, under Wine and Proton too, and ~/Library/Application Support/CameraUnlock/Defaults.ini
+; on macOS. The log names the file it read. Write a value instead of default to change that
+; setting for this game only.
+
+[CameraUnlock]
+; Written by the mod. Leave this section in place.
+ConfigFormat=1
+
+[Network]
+; UDP port the mod receives tracker data on (OpenTrack protocol).
+UdpPort=default
+
 [General]
-; Yaw mode: true = horizon-locked yaw (default), false = camera-local
-WorldSpaceYaw=true
-; Keep the space suit helmet on your head instead of leaving it facing where the body looks
+; true: head tracking is on when the game starts. ToggleKey turns it on and off.
+EnableOnStartup=default
+; true: yaw turns around the world's up axis. false: around the camera's own up axis.
+WorldSpaceYaw=default
+; true: turning your head turns the view.
+; Tracking mode at startup, with PositionEnabled. The mode hotkey changes both.
+RotationEnabled=default
+; true: the space suit helmet stays on your head as you look around.
+; false: it stays facing where your body looks.
 HelmetFollowsHead=true
-; Skip the boot splash screens. These carry the developer and publisher credits, so this is off unless you turn it on
+; true: skip the splash screens at startup. They carry the developer and
+; publisher credits, so this is off unless you turn it on.
 SkipIntroMovies=false
-; Smoothing applied when the tracker runs on this machine (loopback). 0 = no smoothing, 1 = heavy
-LocalSmoothing=0.0
-; Smoothing applied when the tracker is a remote device on the network. 0 = no smoothing, 1 = heavy
-RemoteSmoothing=0.15
+
+[Smoothing]
+; Smoothing when the tracker runs on this PC. 0 is the least, 1 the most.
+LocalSmoothing=default
+; Smoothing when the tracker is another device on the network, such as a phone.
+; 0 is the least, 1 the most.
+RemoteSmoothing=default
+
+[Position]
+; true: moving your head moves the view.
+; Tracking mode at startup, with RotationEnabled. The mode hotkey changes both.
+PositionEnabled=default
+; How far, in metres, leaning left or right can move the view.
+PositionLimitX=default
+; How far, in metres, raising your head can move the view.
+PositionLimitY=default
+; How far, in metres, lowering your head can move the view.
+PositionLimitYDown=default
+; How far, in metres, leaning forward can move the view.
+PositionLimitZ=default
+; How far, in metres, leaning back can move the view.
+PositionLimitZBack=default
 
 [Hotkeys]
-; Virtual-key code for the yaw-mode toggle.
-YawModeKey=0x22    ; Page Down
+; Turns head tracking on and off.
+ToggleKey=default
+; Changes the tracking mode: rotation and position, rotation only, position only.
+CycleTrackingModeKey=default
+; Switches yaw between the world's up axis and the camera's own (WorldSpaceYaw).
+YawModeKey=default
+; Diagnostic: widens the view the game culls against, for this session only.
+; The picture zooms out while it is on.
+FrustumWideningKey=Insert, Ctrl+Shift+U
+; Diagnostic: cycles where the head pose is applied, for this session only.
+InjectionModeKey=Delete, Ctrl+Shift+J
 ```
+<!-- /cameraunlock:config -->
 
-`WorldSpaceYaw=true` (default) keeps yaw rotating around the world up-axis, so "up" stays gravity-aligned even when you look up or down. Set it to `false` for camera-local yaw, which follows the camera's current up-axis. Toggle it at runtime with `Page Down` or `Ctrl+Shift+H` without restarting.
+There are no sensitivity, inversion or deadzone settings: the mod applies the pose your tracker sends, so set those in the tracker.
 
-`HelmetFollowsHead=true` (default) keeps the space suit helmet on your head as you look around, instead of it staying fixed to the body and leaving you looking out through the side of it.
+`HelmetFollowsHead=true` keeps the space suit helmet on your head as you look around, instead of it staying fixed to the body and leaving you looking out through the side of it.
 
-`SkipIntroMovies=false` (default) leaves the game's boot sequence exactly as
+`SkipIntroMovies=false` leaves the game's boot sequence exactly as
 Creative Assembly shipped it. Set it to `true` and the mod answers yes to the
 game's own `skip_frontend` flag, which drops you at the title screen without the
 company splash screens. It is off by default because those screens are where the
 game's credits are shown; skipping them is your call, not something head
 tracking should do behind your back.
 
-`LocalSmoothing` and `RemoteSmoothing` are picked per connection from the address the packets arrive from, and both cover rotation and position. A tracker on this PC (OpenTrack over loopback) uses `LocalSmoothing`, which defaults to `0.0` for zero-latency tracking; a phone or other device on the network uses `RemoteSmoothing`, which defaults to `0.15` because network jitter needs it. Switching between the two is picked up without restarting the game.
+`LocalSmoothing` is used for a tracker on this PC (OpenTrack over loopback) and `RemoteSmoothing` for a phone or other device on the network, picked from the address the packets arrive from. Both cover rotation and position, and switching between the two trackers is picked up without restarting the game.
+
+`FrustumWideningKey` and `InjectionModeKey` are diagnostic toggles. They change the current session only and are never saved.
 
 ## Troubleshooting
 
@@ -190,7 +278,7 @@ tracking should do behind your back.
 - If another tracker or modded game already holds port `4242`, close it. The mod retries automatically.
 
 **Jittery or unstable tracking**
-- Raise `LocalSmoothing` (tracker on this PC) or `RemoteSmoothing` (phone or other network device) toward `1.0` in `AlienIsolationHeadTracking.ini`.
+- Raise `LocalSmoothing` (tracker on this PC) or `RemoteSmoothing` (phone or other network device) toward `1.0` in `CameraUnlock.ini`.
 - Raise the smoothing in OpenTrack (or in your phone app, if it sends directly).
 - If a phone app sends straight to `4242` and the view will not settle, route it through OpenTrack instead (see [Phone App Setup](#phone-app-setup)) and select a filter, e.g. Accela, to clean up the signal.
 - Add a small deadzone in OpenTrack's mapping curves to ignore tiny head movements.
@@ -204,7 +292,7 @@ tracking should do behind your back.
 - Toggle between world-locked and camera-local yaw with `Page Down` or `Ctrl+Shift+H`. World-locked (default) is horizon-stable; camera-local follows the camera's current up-axis.
 
 **The space suit helmet does not move with my head**
-- Set `HelmetFollowsHead=true` under `[General]` in `AlienIsolationHeadTracking.ini` (it is on by default).
+- Set `HelmetFollowsHead=true` under `[General]` in `CameraUnlock.ini` (it is on by default).
 
 ## Updating
 

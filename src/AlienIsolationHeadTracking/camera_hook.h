@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cameraunlock/tracking/tracking_mode.h"
+
 namespace cameraunlock {
 class UdpReceiver;
 }
@@ -27,8 +29,8 @@ void SetFrustumWidening(bool enabled);
 bool IsFrustumWidening();
 
 // Advances the tracking mode: rotation and position -> rotation only ->
-// position only -> rotation and position. Returns a name for the new mode.
-const char* CycleTrackingMode();
+// position only -> rotation and position. Returns the new mode.
+cameraunlock::TrackingMode CycleTrackingMode();
 
 // Switches head yaw between the world up axis (horizon-locked, the default) and
 // the camera's own up axis. Returns true if world-space yaw is now on.

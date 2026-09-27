@@ -1,17 +1,25 @@
 #pragma once
 
-#include "cameraunlock/math/smoothing_utils.h"
+#include <string>
 
-namespace config {
+#include "cameraunlock/config/config_owner.h"
+#include "cameraunlock/config/config_table.h"
+#include "cameraunlock/config/defaults_file.h"
+#include "cameraunlock/config/head_tracking_config.h"
+#include "cameraunlock/config/legacy_import.h"
 
-// Settings read from AlienIsolationHeadTracking.ini beside AI.exe.
-struct Settings {
-    // Yaw about the world up axis rather than the camera's own, so looking at
-    // the floor and turning the head pans across it instead of spinning the
-    // view about the direction of gaze.
-    bool world_space_yaw = true;
-    int yaw_mode_key = 0x22;  // Page Down
+namespace aiht {
 
+constexpr const char* kConfigFileName = "CameraUnlock.ini";
+// The file every build before the canonical format read, beside
+// kConfigFileName. Imported once while kConfigFileName is absent, and never
+// written.
+constexpr const char* kLegacyConfigFileName = "AlienIsolationHeadTracking.ini";
+// The game's name as cameraunlock-core's data/games.json spells it.
+constexpr const char* kConfigDisplayName = "Alien: Isolation";
+
+// Core's config with this game's own settings.
+struct Config : cameraunlock::HeadTrackingConfig {
     // Keeps the space suit helmet on the player's head. The helmet is geometry
     // attached to the camera and positioned by the engine's entity update, so it
     // only follows the head if the camera is still rotated when that update
@@ -26,17 +34,31 @@ struct Settings {
     // installing head tracking.
     bool skip_intro_movies = false;
 
-    // Smoothing is picked per connection from the packet source address: a
-    // tracker running on this machine (loopback) uses local_smoothing, a phone
-    // or other device on the network uses remote_smoothing. Both cover rotation
-    // and position. 0 = none, 1 = heavy.
-    float local_smoothing = static_cast<float>(cameraunlock::math::kDefaultLocalSmoothing);
-    float remote_smoothing = static_cast<float>(cameraunlock::math::kDefaultRemoteSmoothing);
+    // Two diagnostic toggles for this session: widening the frustum handed to
+    // the engine, and cycling where the head pose is injected.
+    std::string frustum_widening_key_name = "Insert, Ctrl+Shift+U";
+    std::string injection_mode_key_name = "Delete, Ctrl+Shift+J";
 };
 
-// Reads the INI on first call, writing a commented default file when none is
-// there. An entry the file does not carry keeps its default, so a file written
-// by an older build still loads.
-const Settings& Get();
+// The rows of CameraUnlock.ini. Only the tracking mode pair and WorldSpaceYaw
+// are Writable: the mode and yaw hotkeys save the player's choice, and End and
+// the two diagnostic toggles change the session only.
+cameraunlock::config::ConfigTable<Config> MakeConfigTable();
 
-}  // namespace config
+// AlienIsolationHeadTracking.ini as the builds before the canonical format read
+// it (legacy_config/), mapped into Config.
+cameraunlock::config::LegacyImport<Config> MakeLegacyImport();
+
+// The owner's options for the files in `folder` (with its trailing separator):
+// the settings in CameraUnlock.ini, imported once from
+// AlienIsolationHeadTracking.ini. The mod passes DefaultsFile::PerUser() and a
+// test a scratch file.
+cameraunlock::config::ConfigOwnerOptions<Config> MakeConfigOwnerOptions(
+    const std::wstring& folder, cameraunlock::config::DefaultsFile defaults);
+
+// The settings this session started on, which the init thread publishes once
+// before anything reads them.
+const Config& Settings();
+void PublishSettings(const Config& config);
+
+}  // namespace aiht

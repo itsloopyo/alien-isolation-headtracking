@@ -89,6 +89,15 @@ try {
     exit 1
 }
 
+# A release below the config descriptor's canonical_since would ship the
+# canonical config under a version the descriptor says predates it.
+try {
+    Assert-ReleaseNotBelowCanonicalSince -RepoRoot $ProjectRoot -Version $target
+} catch {
+    Write-Error $_.Exception.Message
+    exit 1
+}
+
 # --- 2. Preconditions (these stand in for interactive confirmation) ----
 $branch = (git -C $ProjectRoot rev-parse --abbrev-ref HEAD).Trim()
 if ($branch -ne 'main') {

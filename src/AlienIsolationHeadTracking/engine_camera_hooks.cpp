@@ -346,7 +346,7 @@ int RunCleanTask(int index) {
     // for the rest of the frame and be lifted around each gameplay task, which
     // left it applied through every stretch of the frame that is not one of
     // these eight - and something in there places the first-person weapon.
-    const bool rotate = config::Get().helmet_follows_head && task.keepsRotation;
+    const bool rotate = aiht::Settings().helmet_follows_head && task.keepsRotation;
     SetCachedForward(rotate);
     if (rotate) RotateEntity(g_cameraEntity);
     const int result = task.original();

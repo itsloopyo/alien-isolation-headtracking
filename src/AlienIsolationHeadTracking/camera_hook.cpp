@@ -109,7 +109,7 @@ void LogConnectionLocality() {
     g_remoteConnectionKnown = true;
 
     const double effective = math::GetEffectiveSmoothing(
-        config::Get().local_smoothing, config::Get().remote_smoothing, isRemote);
+        aiht::Settings().local_smoothing, aiht::Settings().remote_smoothing, isRemote);
     logging::Line("camera: tracker connection is %s; smoothing=%.2f",
                   isRemote ? "remote" : "local", effective);
 }
@@ -125,7 +125,7 @@ bool UpdatePose(float dt) {
     // tracker connected when nothing has arrived.
     if (fresh) LogConnectionLocality();
     if (fresh) {
-        camera::HeadPose pose;
+        ::camera::HeadPose pose;
         g_session->GetRotation(pose.yaw, pose.pitch, pose.roll);
         if (!g_session->GetPositionOffset(pose.offset[0], pose.offset[1], pose.offset[2])) {
             pose.offset[0] = pose.offset[1] = pose.offset[2] = 0.0f;
@@ -139,7 +139,7 @@ bool UpdatePose(float dt) {
             // before: 0.10m of leaning in and 0.40m of pulling away.
             pose.offset[2] = -pose.offset[2];
         }
-        camera::State().PublishPose(pose);
+        ::camera::State().PublishPose(pose);
     }
     return fresh;
 }
@@ -156,7 +156,7 @@ float g_aimDistance = 0.0f;
 float g_lastDepth = -1.0f;
 int g_depthReads = 0;
 
-void ClearAimDistance(camera::InjectionState& state) {
+void ClearAimDistance(::camera::InjectionState& state) {
     g_aimDistance = 0.0f;
     state.SetAimDistance(0.0f);
 }
@@ -171,18 +171,18 @@ void ReportFirstDistance(float distance) {
     logging::Line("camera: first measured aim distance %.2f m", distance);
 }
 
-void UpdateAimDistance(rendering::DX11DrawContext& dc, camera::InjectionState& state, bool aimValid,
+void UpdateAimDistance(rendering::DX11DrawContext& dc, ::camera::InjectionState& state, bool aimValid,
                        float dt) {
-    const camera::AimFrame frame = state.CurrentAimFrame();
+    const ::camera::AimFrame frame = state.CurrentAimFrame();
     float depth = 0.0f;
-    if (!camera::depth_probe::Update(static_cast<int>(dc.Width()), static_cast<int>(dc.Height()),
+    if (!::camera::depth_probe::Update(static_cast<int>(dc.Width()), static_cast<int>(dc.Height()),
                                      aimValid && frame.valid, frame.ndcX, frame.ndcY, depth))
         return;
     g_lastDepth = depth;
     ++g_depthReads;
 
     float measured = 0.0f;
-    if (!camera::AimDistanceFromDepth(frame, depth, measured)) {
+    if (!::camera::AimDistanceFromDepth(frame, depth, measured)) {
         // Sky: there is no surface to stay glued to, and a point at infinity has
         // no parallax.
         ClearAimDistance(state);
@@ -219,17 +219,17 @@ void ReportProgress(float dt) {
     elapsed += dt;
     if (elapsed < kPoseLogIntervalSeconds) return;
     elapsed = 0.0f;
-    const camera::HeadPose pose = camera::State().CurrentPose();
+    const ::camera::HeadPose pose = ::camera::State().CurrentPose();
     logging::Line("camera: yaw=%.2f pitch=%.2f roll=%.2f off=(%.3f %.3f %.3f) aim=%.2fm "
                   "depth=%.6f reads=%d", pose.yaw, pose.pitch, pose.roll, pose.offset[0],
                   pose.offset[1], pose.offset[2], g_aimDistance, g_lastDepth, g_depthReads);
 }
 
 void OnRender(rendering::DX11DrawContext& dc) {
-    camera::InjectionState& state = camera::State();
+    ::camera::InjectionState& state = ::camera::State();
     if (dc.Height() > 0)
-        camera::constant_buffers::SetRenderAspect(dc.Width() / static_cast<float>(dc.Height()));
-    camera::constant_buffers::BeginFrame();
+        ::camera::constant_buffers::SetRenderAspect(dc.Width() / static_cast<float>(dc.Height()));
+    ::camera::constant_buffers::BeginFrame();
 
     const float dt = g_clock.Tick();
 
@@ -253,7 +253,7 @@ void OnRender(rendering::DX11DrawContext& dc) {
     // over a live 3D scene, so without this the view keeps swinging behind it;
     // publishing no pose leaves the publish nothing to apply and its own revert
     // hands the camera back exactly as the game built it.
-    if (!GameWindowActive() || camera::game_state::IsPaused()) {
+    if (!GameWindowActive() || ::camera::game_state::IsPaused()) {
         state.ClearPose();
         state.ClearAim();
         ClearAimDistance(state);
@@ -300,7 +300,14 @@ void Install(UdpReceiver& receiver) {
                   "silently stays on the local parameter forever");
     g_session = &session;
 
-    State().SetWorldSpaceYaw(config::Get().world_space_yaw);
+    const aiht::Config& settings = aiht::Settings();
+    State().SetEnabled(settings.enable_on_startup);
+    State().SetWorldSpaceYaw(settings.world_space_yaw);
+    // The owner's table refuses a pair with both channels off, so the pair
+    // always decodes.
+    const TrackingMode startMode = *DecodeTrackingMode(settings.rotation_enabled, settings.position_enabled);
+    session.SetMode(startMode);
+    State().SetPositionEnabled(startMode != TrackingMode::RotationOnly);
 
     // CATHODE's view space runs pitch and roll opposite to OpenTrack's sense,
     // so both are inverted here rather than in the rotation build, which stays
@@ -316,7 +323,7 @@ void Install(UdpReceiver& receiver) {
     // Z is NOT inverted here. The core-to-engine sign flip lives in UpdatePose,
     // where it belongs, and it keeps the generous forward limit on forward
     // travel; this flag only says which way round the tracker reports a dolly.
-    PositionSettings position = PositionSettings::Default();
+    PositionSettings position = settings.position;
     position.invert_x = true;
     position.invert_z = false;
     session.GetPositionProcessor().SetSettings(position);
@@ -324,8 +331,8 @@ void Install(UdpReceiver& receiver) {
     // After SetSettings, which would otherwise reset what the user configured.
     // Both values go to rotation and position; the session picks one per
     // connection from the address the packets arrive from.
-    session.SetLocalSmoothing(config::Get().local_smoothing);
-    session.SetRemoteSmoothing(config::Get().remote_smoothing);
+    session.SetLocalSmoothing(settings.local_smoothing);
+    session.SetRemoteSmoothing(settings.remote_smoothing);
 
     if (MH_Initialize() != MH_OK) {
         logging::Line("camera: MH_Initialize failed");
@@ -353,15 +360,10 @@ void SetEnabled(bool enabled) { State().SetEnabled(enabled); }
 
 bool IsEnabled() { return State().Enabled(); }
 
-const char* CycleTrackingMode() {
-    if (!g_session) return "unchanged (camera hook not live yet)";
+TrackingMode CycleTrackingMode() {
     const TrackingMode mode = g_session->CycleMode();
     State().SetPositionEnabled(mode != TrackingMode::RotationOnly);
-    switch (mode) {
-        case TrackingMode::RotationOnly: return "ROTATION ONLY (position off)";
-        case TrackingMode::PositionOnly: return "POSITION ONLY (rotation off)";
-        default: return "ROTATION AND POSITION";
-    }
+    return mode;
 }
 
 bool ToggleYawMode() {

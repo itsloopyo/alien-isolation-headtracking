@@ -3,3 +3,4 @@
 *.bat text eol=crlf
 # Byte-exact test data: the differential test compares these bytes, CRLF included.
 tests/config_differential/data/** -text
+config/CameraUnlock.ini -text

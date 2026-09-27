@@ -16,6 +16,11 @@ sync = "git submodule update --remote cameraunlock-core"
 configure = "cmake -S . -B build -A Win32 -DAIHT_BUILD_CAMERA=ON"
 build = { cmd = "cmake --build build --config Release", depends-on = ["configure"] }
 test = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1", depends-on = ["build"] }
+# Rewrite config/CameraUnlock.ini, the committed copy of the CameraUnlock.ini the mod creates at
+# first launch, from the config table after a change to a row, a comment or a default, then
+# rewrite the per_game of launcher-manifest.json's config descriptor from it.
+render-config = { cmd = "build/tests/Release/config_tests.exe --render-config config/CameraUnlock.ini && node cameraunlock-core/scripts/encode-seed.mjs", depends-on = ["build"] }
+validate-manifest = "node cameraunlock-core/scripts/validate-manifest.mjs"
 deploy = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1"
 install = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1", depends-on = ["build"] }
 # /y keeps uninstall.cmd headless - its trailing pause would throw on the

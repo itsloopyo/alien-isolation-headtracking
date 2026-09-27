@@ -48,7 +48,7 @@ int __cdecl DebugFlagDetour(const char* name) {
 }  // namespace
 
 void Install() {
-    if (!config::Get().skip_intro_movies) return;
+    if (!aiht::Settings().skip_intro_movies) return;
     if (!builds::MatchesKnownBuild()) return;
     void* target = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr)) +
                                            builds::ActiveOffsets().hooks.debug_flag);
