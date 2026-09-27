@@ -15,7 +15,7 @@ update-submodule = "git submodule update --remote cameraunlock-core && powershel
 sync = "git submodule update --remote cameraunlock-core"
 configure = "cmake -S . -B build -A Win32 -DAIHT_BUILD_CAMERA=ON"
 build = { cmd = "cmake --build build --config Release", depends-on = ["configure"] }
-test = { cmd = "ctest --test-dir build -C Release --output-on-failure", depends-on = ["build"] }
+test = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1", depends-on = ["build"] }
 deploy = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1"
 install = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1", depends-on = ["build"] }
 # /y keeps uninstall.cmd headless - its trailing pause would throw on the

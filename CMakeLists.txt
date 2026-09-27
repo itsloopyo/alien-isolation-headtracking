@@ -54,6 +54,7 @@ add_subdirectory(cameraunlock-core/cpp ${CMAKE_BINARY_DIR}/cameraunlock-core)
 # --- mod plugin (.asi) ----------------------------------------------------
 set(AIHT_SOURCES
     src/AlienIsolationHeadTracking/config.cpp
+    src/AlienIsolationHeadTracking/legacy_config/legacy_config.cpp
     src/AlienIsolationHeadTracking/dllmain.cpp
 )
 if(AIHT_BUILD_CAMERA)

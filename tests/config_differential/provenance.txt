@@ -1,0 +1,23 @@
+# What the config differential test compiles, and where each file came from.
+# scripts/run-tests.ps1 fails when a listed file no longer has its hash.
+#
+# Newest published build: the rolling 'dev' pre-release, tag dev at e04ae0c, pinned to
+# cameraunlock-core 3465659. No v* release was published, and the installer ZIP carried
+# no config and no launcher seed, so the build's first run is the only shipped file.
+#
+# Oracle: copies of 'git show dev:<path>'. Every core source it compiles is the file
+# cameraunlock-core 3465659 had, byte for byte, so the oracle builds against the pinned core.
+cd0ee3d356c332e2b696f0eb6022e117531bcdc1ce104209d13f455ed3f99e97  tests/config_differential/oracle/src/config.cpp  dev:src/AlienIsolationHeadTracking/config.cpp
+14cb3f13255ad45d9bd5f864e67056fdccc56cc4ad5103c8a978a1c240dbc438  tests/config_differential/oracle/src/config.h  dev:src/AlienIsolationHeadTracking/config.h
+a7ffb44210ff59672fa97e8e5feaa2cb3e81938fcc0334a384c68bc371b3857a  cameraunlock-core/cpp/include/cameraunlock/config/ini_reader.h  core 3465659:cpp/include/cameraunlock/config/ini_reader.h
+e01515c2656aaf533bae4350dc45b702c3e3d4043935743dcc9bd5ea581fbe1c  cameraunlock-core/cpp/src/config/ini_reader.cpp  core 3465659:cpp/src/config/ini_reader.cpp
+43bdd2ef8554c78e5f440333463750c13b95110fe672b0b6e273244df9e7d169  cameraunlock-core/cpp/include/cameraunlock/logging/file_log.h  core 3465659:cpp/include/cameraunlock/logging/file_log.h
+73c53c2baa06bbfebe8211f62678aa2b60cb95f604743d3686951ba56b87ea47  cameraunlock-core/cpp/src/logging/file_log.cpp  core 3465659:cpp/src/logging/file_log.cpp
+de519d9b49c949353c550b9dda347380cbbf131f6768378f8a9f5fd97678fea8  cameraunlock-core/cpp/include/cameraunlock/input/chord_hotkeys.h  core 3465659:cpp/include/cameraunlock/input/chord_hotkeys.h
+#
+# The first-run output of the dev build, extracted once from the oracle.
+3f4befbcab171d584d0ed52601da5428646753130e3f70a0140cfe88a5fc6a09  tests/config_differential/data/dev-first-run.ini  dev first run
+#
+# The frozen import. Never edited once the conversion landed.
+40da0499b5bb550fc1b767a5d38ded8472d8b3c8b938d0e0b411d001a34296a4  src/AlienIsolationHeadTracking/legacy_config/legacy_config.h  frozen import
+3062adb8464fac167a428a39830ea1658889ee98e6ae9d437052d588f8bbc9de  src/AlienIsolationHeadTracking/legacy_config/legacy_config.cpp  frozen import
