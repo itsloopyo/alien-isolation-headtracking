@@ -2,23 +2,13 @@
 
 ![Alien: Isolation running with this mod](https://raw.githubusercontent.com/itsloopyo/alien-isolation-headtracking/main/assets/readme-clip.gif)
 
-An unofficial head tracking mod for Alien: Isolation that moves the view with your head while your mouse or controller keeps aiming, driven by OpenTrack over UDP, with no VR headset required.
-
-> [!CAUTION]
-> ## Not exhaustively tested - expect rough edges
->
-> Head tracking, aim decoupling and 6DOF position all work in game, but the mod
-> has only been played through a small part of Alien: Isolation. Expect issues
-> in situations it has not been put through yet.
->
-> Please report anything you hit on the [issues page](https://github.com/itsloopyo/alien-isolation-headtracking/issues).
+An unofficial head tracking mod for Alien: Isolation that moves the view with your head while your mouse or controller keeps aiming, driven by a webcam, phone, or any OpenTrack compatible tracker, with no VR headset required.
 
 ## Features
 
 - **Decoupled look and aim** - head tracking moves the camera; aim stays on your mouse/controller
 - **6DOF positional tracking** - lean and peek with head position
 - **Works with any OpenTrack compatible tracker** - free options available for PC, iOS and Android
-- **Aim-locked reticle and use prompts** - our reticle and the "E USE" prompt sit where the gun actually points
 
 ## Requirements
 
@@ -153,7 +143,7 @@ Two equivalent binding sets - use whichever your keyboard has:
 
 ## Configuration
 
-The config file is generated on first run next to `AI.exe` at `AlienIsolationHeadTracking.ini`. A setting the file does not carry keeps its default, so a file written by an older build still loads.
+The config file is generated on first run next to `AI.exe` at `AlienIsolationHeadTracking.ini`.
 
 ```ini
 [General]
