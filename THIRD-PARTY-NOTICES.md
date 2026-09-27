@@ -18,7 +18,7 @@ described under "Alien: Isolation" below.
 | MemoryModule | `5f83e41` (inside Ultimate ASI Loader v9.7.2) | MPL-2.0 | Compiled into the vendored dinput8.dll |
 | d3d8to9 | `65870f2` (inside Ultimate ASI Loader v9.7.2) | BSD-2-Clause | Compiled into the vendored dinput8.dll |
 | MinHook | `d94c64d32ea3` | BSD-2-Clause | Compiled into `AlienIsolationHeadTracking.asi` |
-| cameraunlock-core | ba57f8488cf98be2148f4f6640125c5d1e5fb3ca | MIT | Compiled into `AlienIsolationHeadTracking.asi` |
+| cameraunlock-core | 36819655d6ce45d4de121aa03765ea2d2e60b98f | MIT | Compiled into `AlienIsolationHeadTracking.asi` |
 | OpenTrack | n/a | ISC | Not bundled; UDP protocol interoperability only |
 
 ---
@@ -722,7 +722,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Git submodule at `cameraunlock-core/`, compiled into `AlienIsolationHeadTracking.asi`. Our own code,
 MIT licensed, reproduced here so the notices are complete.
 
-- Pinned commit: `ba57f8488cf98be2148f4f6640125c5d1e5fb3ca`
+- Pinned commit: `36819655d6ce45d4de121aa03765ea2d2e60b98f`
 
 ```
 MIT License
