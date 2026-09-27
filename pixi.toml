@@ -9,6 +9,7 @@ platforms = ["win-64"]
 [dependencies]
 cmake = ">=3.20"
 ninja = "*"
+nodejs = "==26.5.0"
 
 [tasks]
 update-submodule = "git submodule update --remote cameraunlock-core && powershell -NoProfile -ExecutionPolicy Bypass -File cameraunlock-core/scripts/update-submodule.ps1"
