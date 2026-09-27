@@ -265,10 +265,14 @@ void InitThreadBody() {
     if (centering) CloseHandle(centering);
 
 #if defined(AIHT_CAMERA)
-    ::camera::Install(g_receiver);
+    ::camera::StartSession(g_receiver);
 #endif
-    // After the install, which starts the session the mode hotkey cycles.
+    // After the session the mode hotkey cycles, and before the hook install,
+    // which can block for fifteen seconds.
     RegisterHotkeys(cfg);
+#if defined(AIHT_CAMERA)
+    ::camera::Install();
+#endif
 
     // Tracker state, on change only. The live pose is reported from the render
     // side, which knows whether the camera is being driven with it; a second

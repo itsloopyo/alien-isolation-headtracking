@@ -289,11 +289,7 @@ void OnRender(rendering::DX11DrawContext& dc) {
 
 namespace camera {
 
-void Install(UdpReceiver& receiver) {
-    // Before the Present hook goes in: its callback runs as soon as the game
-    // draws a frame, which can be earlier than the constant-buffer hook setup.
-    constant_buffers::Initialize();
-
+void StartSession(UdpReceiver& receiver) {
     static HeadTrackingSession<UdpReceiver> session(receiver);
     static_assert(HeadTrackingSession<UdpReceiver>::kHasRemoteConnection,
                   "receiver must classify connection locality, or smoothing "
@@ -333,6 +329,12 @@ void Install(UdpReceiver& receiver) {
     // connection from the address the packets arrive from.
     session.SetLocalSmoothing(settings.local_smoothing);
     session.SetRemoteSmoothing(settings.remote_smoothing);
+}
+
+void Install() {
+    // Before the Present hook goes in: its callback runs as soon as the game
+    // draws a frame, which can be earlier than the constant-buffer hook setup.
+    constant_buffers::Initialize();
 
     if (MH_Initialize() != MH_OK) {
         logging::Line("camera: MH_Initialize failed");

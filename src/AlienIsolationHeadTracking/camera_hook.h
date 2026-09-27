@@ -8,10 +8,16 @@ class UdpReceiver;
 
 namespace camera {
 
-// Initialize MinHook, start the tracking session and install every injection
-// point: the DX11 Present-hook overlay that drives it, the engine-side camera
-// hooks, and the constant-buffer hook. The receiver must outlive the hooks.
-void Install(cameraunlock::UdpReceiver& receiver);
+// Start the tracking session from the loaded settings. The receiver must
+// outlive the hooks. Returns at once, so the hotkeys can go live before the
+// hooks do.
+void StartSession(cameraunlock::UdpReceiver& receiver);
+
+// Initialize MinHook and install every injection point: the DX11 Present-hook
+// overlay that drives the session, the engine-side camera hooks, and the
+// constant-buffer hook, whose retry loop can block for fifteen seconds. Call
+// after StartSession.
+void Install();
 
 // Master on/off for view injection.
 void SetEnabled(bool enabled);
