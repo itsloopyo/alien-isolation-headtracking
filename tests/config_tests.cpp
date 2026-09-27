@@ -121,13 +121,16 @@ void SaveTest() {
           "the mode save changes only the pair");
     Check(ReadBytes(defaults) == defaultsBefore, "no save writes Defaults.ini");
 
+    // A table-level proxy for "End never persists": End's handler lives in
+    // dllmain.cpp, which no test compiles, and calls no Save. This holds the one
+    // row it would need to write off the Writable list.
     bool refused = false;
     try {
         owner.Save([](Config& c) { c.enable_on_startup = false; });
     } catch (const std::exception&) {
         refused = true;
     }
-    Check(refused, "EnableOnStartup is not Writable, so End cannot persist");
+    Check(refused, "EnableOnStartup, the row End would change, is not Writable");
 
     const cfg::ConfigLoadResult<Config> reread = cfg::ConfigOwner<Config>(options()).Load();
     Check(reread.status == cfg::ConfigLoadStatus::Canonical && !reread.config.world_space_yaw &&
