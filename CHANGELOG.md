@@ -28,7 +28,7 @@ All notable changes to this project are documented here. Format based on
 - An older version of the mod reads `AlienIsolationHeadTracking.ini` and never reads `CameraUnlock.ini`, so a setting you change after updating is not in `AlienIsolationHeadTracking.ini`.
 - Deleting only `CameraUnlock.ini` makes the next start read `AlienIsolationHeadTracking.ini` again. To go back to the defaults, replace everything in `CameraUnlock.ini` with the defaults the README shows. Every setting they set to `default` then follows `Defaults.ini`.
 - Hotkeys are written as key names, and each hotkey lists every key that triggers it, the Ctrl+Shift chord included: `ToggleKey=End, Ctrl+Shift+Y`.
-- Against the `dev` pre-release, the import reads `SkipIntroMovies`, which `dev` did not have: `dev` always skipped the splash screens, and since 2517d2d they play unless `SkipIntroMovies=true`.
+- The `dev` pre-release always skipped the splash screens. They now play unless you set `SkipIntroMovies=true`.
 - Stripped the third-party DLLs Ultimate ASI Loader carries as resources out of
   the vendored copy. The upstream 32-bit build embeds `binkw32.dll` (RAD Game
   Tools' Bink and Smacker 1.994i, proprietary middleware licensed per title),
