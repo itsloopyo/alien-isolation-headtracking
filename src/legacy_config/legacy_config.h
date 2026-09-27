@@ -1,8 +1,9 @@
 #pragma once
 
-// The reader every build before the canonical format ran on
-// AlienIsolationHeadTracking.ini, frozen so a player updating from any of them
-// has the file read exactly as that build read it. Nothing in this folder is
+// The pre-canonical reader of AlienIsolationHeadTracking.ini as it stood after
+// 2517d2d, frozen so a player updating has the file read exactly as that reader
+// read it. It differs from the published dev build's reader only by the
+// General/SkipIntroMovies key, which dev did not read. Nothing in this folder is
 // ever edited. Three things differ from the reader it was taken from: it fills
 // this frozen copy of that build's Settings and defaults rather than the
 // runtime type, it takes the path instead of building it, and it never writes

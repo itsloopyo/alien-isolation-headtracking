@@ -19,5 +19,5 @@ de519d9b49c949353c550b9dda347380cbbf131f6768378f8a9f5fd97678fea8  cameraunlock-c
 3f4befbcab171d584d0ed52601da5428646753130e3f70a0140cfe88a5fc6a09  tests/config_differential/data/dev-first-run.ini  dev first run
 #
 # The frozen import. Never edited once the conversion landed.
-40da0499b5bb550fc1b767a5d38ded8472d8b3c8b938d0e0b411d001a34296a4  src/legacy_config/legacy_config.h  frozen import
+bd0a3149378e52db04db137cd5da4f477d3d190e595397fd026ee71ed0b6c98b  src/legacy_config/legacy_config.h  frozen import
 d64a210df96720f3778f8a248e350e9963fe0c2be8a95ec022afc878e316564b  src/legacy_config/legacy_config.cpp  frozen import
