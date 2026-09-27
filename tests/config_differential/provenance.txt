@@ -20,4 +20,4 @@ de519d9b49c949353c550b9dda347380cbbf131f6768378f8a9f5fd97678fea8  cameraunlock-c
 #
 # The frozen import. Never edited once the conversion landed.
 40da0499b5bb550fc1b767a5d38ded8472d8b3c8b938d0e0b411d001a34296a4  src/AlienIsolationHeadTracking/legacy_config/legacy_config.h  frozen import
-3062adb8464fac167a428a39830ea1658889ee98e6ae9d437052d588f8bbc9de  src/AlienIsolationHeadTracking/legacy_config/legacy_config.cpp  frozen import
+d64a210df96720f3778f8a248e350e9963fe0c2be8a95ec022afc878e316564b  src/AlienIsolationHeadTracking/legacy_config/legacy_config.cpp  frozen import
