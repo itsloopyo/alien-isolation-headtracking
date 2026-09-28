@@ -58,21 +58,6 @@ function Write-NoBom {
     [System.IO.File]::WriteAllText($Path, $Text, (New-Object System.Text.UTF8Encoding $false))
 }
 
-# Mirrors New-ChangelogFromCommits' insertion so a -Force maintenance entry
-# lands in the same place with the same shape.
-function Add-MaintenanceChangelogEntry {
-    param([string]$Path, [string]$NewVersion)
-    $date  = Get-Date -Format 'yyyy-MM-dd'
-    $entry = "## [$NewVersion] - $date`n`n### Changed`n`n- Maintenance release (no user-facing changes).`n`n"
-    $changelog = Get-Content $Path -Raw
-    if ($changelog -match '(?s)(# Changelog.*?)(## \[)') {
-        $changelog = $changelog -replace '(?s)(# Changelog.*?\n\n)', "`$1$entry"
-    } else {
-        $changelog = $changelog -replace '(?s)(# Changelog.*?\n)', "`$1$entry"
-    }
-    Write-NoBom -Path $Path -Text ($changelog.TrimEnd() + "`n")
-}
-
 # --- 1. Resolve and validate the target version ------------------------
 $cmakePath = Join-Path $ProjectRoot 'CMakeLists.txt'
 $cmakeText = Get-Content $cmakePath -Raw
@@ -127,26 +112,17 @@ Write-Host "Releasing $current -> $target" -ForegroundColor Cyan
 # clean tree instead of stranding a half-applied version bump with no tag.
 $changelogPath = Join-Path $ProjectRoot 'CHANGELOG.md'
 Write-Host "Generating CHANGELOG from commits..." -ForegroundColor Cyan
-$hasTags = git -C $ProjectRoot tag -l 2>$null
-if (-not $hasTags) {
-    if (-not (Test-Path $changelogPath)) {
-        $date = Get-Date -Format 'yyyy-MM-dd'
-        Write-NoBom -Path $changelogPath -Text "# Changelog`n`n## [$target] - $date`n`nFirst release.`n"
+try {
+    New-ChangelogFromCommits -ChangelogPath $changelogPath -Version $target -ArtifactPaths @(
+        'src/', 'cameraunlock-core', 'scripts/', 'CMakeLists.txt'
+    ) -Maintenance:$Force | Out-Null
+} catch {
+    if (-not $Force) {
+        Write-Error $_.Exception.Message
+        Write-Host 'No user-facing changes to release. Re-run with -Force for a maintenance release.' -ForegroundColor Yellow
+        exit 1
     }
-} else {
-    try {
-        New-ChangelogFromCommits -ChangelogPath $changelogPath -Version $target -ArtifactPaths @(
-            'src/', 'cameraunlock-core', 'scripts/', 'CMakeLists.txt'
-        ) | Out-Null
-    } catch {
-        if (-not $Force) {
-            Write-Error $_.Exception.Message
-            Write-Host 'No user-facing changes to release. Re-run with -Force for a maintenance release.' -ForegroundColor Yellow
-            exit 1
-        }
-        Write-Host 'No user-facing commits since last tag - writing maintenance entry (-Force).' -ForegroundColor Yellow
-        Add-MaintenanceChangelogEntry -Path $changelogPath -NewVersion $target
-    }
+    throw
 }
 
 # --- 4. Bump the canonical version (CMakeLists.txt) + derived copies ---
