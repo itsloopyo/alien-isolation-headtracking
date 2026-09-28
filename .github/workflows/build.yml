@@ -14,11 +14,12 @@ on:
       - 'docs/**'
       - 'LICENSE'
 
-# Building and uploading an artifact needs nothing from the repository but the
-# code. Without this the job runs with whatever the repo default grants, which
-# is write on many repos.
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

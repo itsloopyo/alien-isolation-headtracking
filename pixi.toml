@@ -16,7 +16,9 @@ update-submodule = "git submodule update --remote cameraunlock-core && powershel
 sync = "git submodule update --remote cameraunlock-core"
 configure = "cmake -S . -B build -A Win32 -DAIHT_BUILD_CAMERA=ON"
 build = { cmd = "cmake --build build --config Release", depends-on = ["configure"] }
-test = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1", depends-on = ["build"] }
+test-unit = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1 -Suite unit", depends-on = ["build"] }
+test-differential = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1 -Suite differential", depends-on = ["build"] }
+test = { depends-on = ["test-unit", "test-differential"] }
 # Rewrite config/CameraUnlock.ini, the committed copy of the CameraUnlock.ini the mod creates at
 # first launch, from the config table after a change to a row, a comment or a default, then
 # rewrite the per_game of launcher-manifest.json's config descriptor from it.
@@ -35,5 +37,5 @@ update-deps = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/updat
 # (binkw32.dll, wndmode.dll, vorbisfile.dll). update-deps runs this already;
 # the task exists for a loader copied in by hand.
 strip-loader = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/strip-loader-payload.ps1 -Path vendor/ultimate-asi-loader/dinput8.dll"
-package = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["test"] }
+package = { cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["test-unit"] }
 release = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1"

@@ -58,6 +58,7 @@ add_test(NAME config_lint COMMAND ${AIHT_NODE}
     ${AIHT_DIFFERENTIAL_DIR}/lint-migrated.mjs
     $<TARGET_FILE_DIR:config_differential_tests>/migrated)
 set_tests_properties(config_lint PROPERTIES DEPENDS config_differential_tests)
+set_tests_properties(config_differential_tests config_lint PROPERTIES LABELS differential)
 
 # The committed config, the hotkey defaults and the saves. `config_tests
 # --render-config <path>` is how `pixi run render-config` rewrites the file.
